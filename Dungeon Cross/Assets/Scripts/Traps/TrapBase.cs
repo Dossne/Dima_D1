@@ -4,6 +4,8 @@ using UnityEngine;
 
 public abstract class TrapBase : MonoBehaviour
 {
+    private const string SwordSfxResourcePath = "Audio/Sfx/SwordSlice";
+
     [SerializeField] protected float moveInterval = 0.6f;
     [SerializeField] protected int direction = 1;
     [SerializeField] protected Vector2Int startGridPosition;
@@ -17,6 +19,7 @@ public abstract class TrapBase : MonoBehaviour
     [SerializeField] protected float orbitRadius = 0.7f;
     [SerializeField] protected float orbitBladeRadius = 0.28f;
     [SerializeField] protected float orbitAngularSpeed = 180f;
+    [SerializeField] protected AudioClip swordHitSfxClip;
 
     private static Sprite cachedTrapSprite;
     private readonly List<Vector2> trajectoryPoints = new List<Vector2>();
@@ -39,6 +42,11 @@ public abstract class TrapBase : MonoBehaviour
 
     protected virtual void Awake()
     {
+        if (swordHitSfxClip == null)
+        {
+            swordHitSfxClip = Resources.Load<AudioClip>(SwordSfxResourcePath);
+        }
+
         TrapManager.Instance?.RegisterTrap(this);
     }
 
@@ -140,6 +148,11 @@ public abstract class TrapBase : MonoBehaviour
     {
         Vector2 orbitOffset = (Vector2)(Quaternion.Euler(0f, 0f, orbitAngle) * (Vector3.right * orbitRadius));
         return (Vector2)transform.position + orbitOffset;
+    }
+
+    protected AudioClip GetImpactSfxClip()
+    {
+        return useOrbitingBlade ? swordHitSfxClip : null;
     }
 
     protected void PlayHitFlash(PlayerController player)
@@ -461,5 +474,3 @@ public abstract class TrapBase : MonoBehaviour
         }
     }
 }
-
-

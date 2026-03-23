@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
+    private const string HitSfxResourcePath = "Audio/Sfx/Punch03";
     public static GameManager Instance { get; private set; }
 
     private const int FinalLevel = 10;
@@ -14,6 +15,7 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private int startingHp = 3;
     [SerializeField] private int currentLevel = 1;
+    [SerializeField] private AudioClip hitSfxClip;
 
     public int CurrentHp { get; private set; }
     public int CurrentLevel => currentLevel;
@@ -34,16 +36,26 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
+        if (hitSfxClip == null)
+        {
+            hitSfxClip = Resources.Load<AudioClip>(HitSfxResourcePath);
+        }
+
         CurrentHp = Mathf.Max(0, startingHp);
         IsGameOver = CurrentHp <= 0;
         BestStreak = PlayerPrefs.GetInt("BestStreak", 0);
     }
 
-    public void TakeDamage(int amount = 1)
+    public void TakeDamage(int amount = 1, AudioClip overrideSfx = null)
     {
         if (IsGameOver || IsLevelComplete)
         {
             return;
+        }
+
+        if (amount > 0)
+        {
+            AudioManager.Instance?.PlaySfx(overrideSfx != null ? overrideSfx : hitSfxClip);
         }
 
         CurrentHp = Mathf.Max(0, CurrentHp - Mathf.Max(0, amount));

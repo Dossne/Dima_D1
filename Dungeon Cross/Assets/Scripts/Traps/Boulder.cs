@@ -62,7 +62,7 @@ public class Boulder : TrapBase
 
         PlayHitFlash(player);
         player.NotifyDamaged();
-        GameManager.Instance.TakeDamage();
+        GameManager.Instance.TakeDamage(1, GetImpactSfxClip());
     }
 
     protected override void BuildTokenVisual(Transform parent)

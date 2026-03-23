@@ -51,7 +51,7 @@ public class PauseMenu : MonoBehaviour
         soundEnabled = PlayerPrefs.GetInt("SoundEnabled", 1) == 1;
         BuildUi();
         RefreshSafeArea();
-        MusicManager.Instance?.RefreshFromPrefs();
+        AudioManager.Instance?.RefreshFromPrefs();
     }
 
     private void Update()
@@ -219,7 +219,7 @@ public class PauseMenu : MonoBehaviour
             soundEnabled = !soundEnabled;
             PlayerPrefs.SetInt("SoundEnabled", soundEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            MusicManager.Instance?.SetSoundEnabled(soundEnabled);
+            AudioManager.Instance?.SetSoundEnabled(soundEnabled);
 
             if (soundText != null)
             {
