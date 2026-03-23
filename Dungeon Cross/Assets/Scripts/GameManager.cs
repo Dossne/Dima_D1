@@ -6,8 +6,11 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    private const int FinalLevel = 10;
+
     public event Action OnGameOver;
     public event Action OnLevelComplete;
+    public event Action OnRunComplete;
 
     [SerializeField] private int startingHp = 3;
     [SerializeField] private int currentLevel = 1;
@@ -18,6 +21,7 @@ public class GameManager : MonoBehaviour
     public int BestStreak { get; private set; }
     public bool IsGameOver { get; private set; }
     public bool IsLevelComplete { get; private set; }
+    public bool IsRunComplete { get; private set; }
     public bool IsPaused { get; private set; }
     public bool IsGameStarted { get; private set; }
 
@@ -48,6 +52,7 @@ public class GameManager : MonoBehaviour
         {
             UpdateBestStreak();
             IsGameOver = true;
+            IsRunComplete = false;
             StreakCount = 0;
             IsPaused = false;
             Time.timeScale = 0f;
@@ -75,6 +80,15 @@ public class GameManager : MonoBehaviour
         UpdateBestStreak();
         IsPaused = false;
         Time.timeScale = 0f;
+
+        if (currentLevel >= FinalLevel)
+        {
+            IsRunComplete = true;
+            OnRunComplete?.Invoke();
+            return;
+        }
+
+        IsRunComplete = false;
         OnLevelComplete?.Invoke();
     }
 
@@ -82,6 +96,7 @@ public class GameManager : MonoBehaviour
     {
         IsGameOver = false;
         IsLevelComplete = false;
+        IsRunComplete = false;
         IsPaused = false;
         currentLevel++;
         Time.timeScale = 1f;
@@ -99,6 +114,7 @@ public class GameManager : MonoBehaviour
         StreakCount = 0;
         IsGameOver = false;
         IsLevelComplete = false;
+        IsRunComplete = false;
         IsPaused = false;
         IsGameStarted = false;
         Time.timeScale = 1f;
@@ -136,6 +152,7 @@ public class GameManager : MonoBehaviour
         currentLevel = 1;
         IsGameOver = CurrentHp <= 0;
         IsLevelComplete = false;
+        IsRunComplete = false;
         StreakCount = 0;
         IsPaused = false;
         IsGameStarted = false;
@@ -154,4 +171,3 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 }
-

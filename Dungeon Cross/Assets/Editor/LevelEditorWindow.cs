@@ -1535,7 +1535,7 @@ public class LevelEditorWindow : EditorWindow
         asset.hazards = new List<RoomHazardConfig>();
         asset.wallCells = new List<WallCellData>();
 
-        string assetPath = AssetDatabase.GenerateUniqueAssetPath(LevelsFolder + "/Level_01.asset");
+        string assetPath = GetNextLevelAssetPath();
         AssetDatabase.CreateAsset(asset, assetPath);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
@@ -1544,6 +1544,29 @@ public class LevelEditorWindow : EditorWindow
         SelectConfig(AssetDatabase.LoadAssetAtPath<LevelConfig>(assetPath));
     }
 
+    private string GetNextLevelAssetPath()
+    {
+        string[] guids = AssetDatabase.FindAssets("t:LevelConfig", new[] { LevelsFolder });
+        int maxLevelNumber = 0;
+
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+            string fileName = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+            if (!fileName.StartsWith("Level_", System.StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            string suffix = fileName.Substring("Level_".Length);
+            if (int.TryParse(suffix, out int levelNumber))
+            {
+                maxLevelNumber = Mathf.Max(maxLevelNumber, levelNumber);
+            }
+        }
+
+        return $"{LevelsFolder}/Level_{maxLevelNumber + 1:00}.asset";
+    }
     private void ImportBuiltInLevels(bool overwriteExisting)
     {
         EnsureLevelsFolderExists();

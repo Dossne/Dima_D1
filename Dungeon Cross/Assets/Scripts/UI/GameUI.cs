@@ -45,6 +45,7 @@ public class GameUI : MonoBehaviour
 
         GameManager.Instance.OnGameOver += HandleGameOver;
         GameManager.Instance.OnLevelComplete += HandleLevelComplete;
+        GameManager.Instance.OnRunComplete += HandleRunComplete;
     }
 
     private void Start()
@@ -104,6 +105,7 @@ public class GameUI : MonoBehaviour
 
         GameManager.Instance.OnGameOver -= HandleGameOver;
         GameManager.Instance.OnLevelComplete -= HandleLevelComplete;
+        GameManager.Instance.OnRunComplete -= HandleRunComplete;
     }
 
     private void CreateUiElements()
@@ -231,7 +233,19 @@ public class GameUI : MonoBehaviour
         waitingForContinue = true;
         waitingForRestart = false;
         ShowCenterMessage("LEVEL COMPLETE!", "Tap to continue");
+        PlayLevelCompleteEffect();
+    }
 
+    private void HandleRunComplete()
+    {
+        waitingForRestart = true;
+        waitingForContinue = false;
+        ShowCenterMessage("VICTORY!", "Congratulations! Tap to restart");
+        PlayLevelCompleteEffect();
+    }
+
+    private void PlayLevelCompleteEffect()
+    {
         GameObject effectObject = new GameObject("LevelCompleteEffect");
         LevelCompleteEffect effect = effectObject.AddComponent<LevelCompleteEffect>();
         effect.Play(Vector3.zero);
@@ -246,6 +260,10 @@ public class GameUI : MonoBehaviour
                 centerText.fontSize = 66;
             }
             else if (mainMessage == "GAME OVER")
+            {
+                centerText.fontSize = 72;
+            }
+            else if (mainMessage == "VICTORY!")
             {
                 centerText.fontSize = 72;
             }
@@ -285,6 +303,7 @@ public class GameUI : MonoBehaviour
         if (waitingForRestart)
         {
             waitingForRestart = false;
+            ShowCenterMessage(string.Empty, string.Empty);
             GameManager.Instance?.ReloadGame();
         }
     }
