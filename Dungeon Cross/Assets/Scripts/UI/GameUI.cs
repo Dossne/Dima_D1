@@ -7,6 +7,7 @@ public class GameUI : MonoBehaviour
     private Text streakText;
     private Text centerText;
     private Text actionText;
+    private RectTransform overlayPanelRect;
     private bool waitingForRestart;
     private bool waitingForContinue;
 
@@ -21,7 +22,10 @@ public class GameUI : MonoBehaviour
 
         if (GetComponent<CanvasScaler>() == null)
         {
-            gameObject.AddComponent<CanvasScaler>();
+            CanvasScaler scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1080f, 1920f);
+            scaler.matchWidthOrHeight = 0.5f;
         }
 
         if (GetComponent<GraphicRaycaster>() == null)
@@ -88,8 +92,17 @@ public class GameUI : MonoBehaviour
 
         hpText = CreateText("HpText", font, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -10f), TextAnchor.UpperLeft, 32);
         streakText = CreateText("StreakText", font, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -50f), TextAnchor.UpperLeft, 28);
-        centerText = CreateText("CenterText", font, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), TextAnchor.MiddleCenter, 48);
-        actionText = CreateText("ActionText", font, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -20f), TextAnchor.MiddleCenter, 28);
+
+        GameObject overlayPanel = new GameObject("OverlayPanel");
+        overlayPanel.transform.SetParent(transform, false);
+        overlayPanelRect = overlayPanel.AddComponent<RectTransform>();
+        overlayPanelRect.anchorMin = Vector2.zero;
+        overlayPanelRect.anchorMax = Vector2.one;
+        overlayPanelRect.offsetMin = Vector2.zero;
+        overlayPanelRect.offsetMax = Vector2.zero;
+
+        centerText = CreateOverlayText("CenterText", font, new Vector2(0f, 80f), 48);
+        actionText = CreateOverlayText("ActionText", font, new Vector2(0f, -20f), 28);
     }
 
     private Text CreateText(string objectName, Font font, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, TextAnchor alignment, int fontSize)
@@ -110,6 +123,28 @@ public class GameUI : MonoBehaviour
         text.alignment = alignment;
         text.color = Color.white;
         text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.verticalOverflow = VerticalWrapMode.Overflow;
+        return text;
+    }
+
+    private Text CreateOverlayText(string objectName, Font font, Vector2 anchoredPosition, int fontSize)
+    {
+        GameObject textObject = new GameObject(objectName);
+        textObject.transform.SetParent(overlayPanelRect, false);
+
+        RectTransform rectTransform = textObject.AddComponent<RectTransform>();
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = new Vector2(40f, 0f);
+        rectTransform.offsetMax = new Vector2(-40f, 0f);
+        rectTransform.anchoredPosition = anchoredPosition;
+
+        Text text = textObject.AddComponent<Text>();
+        text.font = font;
+        text.fontSize = fontSize;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.color = Color.white;
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
         text.verticalOverflow = VerticalWrapMode.Overflow;
         return text;
     }
@@ -158,6 +193,19 @@ public class GameUI : MonoBehaviour
     {
         if (centerText != null)
         {
+            if (mainMessage == "LEVEL COMPLETE!")
+            {
+                centerText.fontSize = 60;
+            }
+            else if (mainMessage == "GAME OVER")
+            {
+                centerText.fontSize = 70;
+            }
+            else
+            {
+                centerText.fontSize = 48;
+            }
+
             centerText.text = mainMessage;
         }
 

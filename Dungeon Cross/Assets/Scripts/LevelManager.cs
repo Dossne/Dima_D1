@@ -43,6 +43,8 @@ public class LevelManager : MonoBehaviour
         {
             SpawnTrapForRow(trapRows[i]);
         }
+
+        GridManager.Instance.FitCameraToGrid();
     }
 
     private void SpawnTrapForRow(TrapRow rowConfig)

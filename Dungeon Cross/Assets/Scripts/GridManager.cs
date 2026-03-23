@@ -58,6 +58,11 @@ public class GridManager : MonoBehaviour
         return new Vector3(x, y, 0f);
     }
 
+    public Vector3 GetWorldPosition(int column, int row)
+    {
+        return GridToWorld(new Vector2Int(column, row));
+    }
+
     private void RecalculateOrigin()
     {
         float width = (columns - 1) * cellSize;
@@ -65,7 +70,7 @@ public class GridManager : MonoBehaviour
         origin = gridCenter - new Vector2(width * 0.5f, height * 0.5f);
     }
 
-    private void FitCameraToGrid()
+    public void FitCameraToGrid()
     {
         Camera cam = Camera.main;
 
@@ -79,15 +84,17 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        const float padding = 0.5f;
+        float padding = 1f;
         float gridWorldHeight = rows * cellSize;
         float gridWorldWidth = columns * cellSize;
-        float camHeight = gridWorldHeight / 2f + padding;
-        float camWidth = gridWorldWidth / 2f + padding;
         float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : cam.aspect;
+        float sizeByHeight = gridWorldHeight / 2f + padding;
+        float sizeByWidth = (gridWorldWidth / 2f + padding) / aspect;
 
         cam.orthographic = true;
-        cam.orthographicSize = Mathf.Max(camHeight, camWidth / aspect);
-        cam.transform.position = new Vector3(gridCenter.x, gridCenter.y, cam.transform.position.z);
+        cam.orthographicSize = Mathf.Max(sizeByHeight, sizeByWidth);
+
+        Vector3 center = GetWorldPosition(columns / 2, rows / 2);
+        cam.transform.position = new Vector3(center.x, center.y, -10f);
     }
 }

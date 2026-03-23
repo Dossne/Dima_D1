@@ -11,6 +11,8 @@ public class SceneBootstrap : MonoBehaviour
 
     private void Awake()
     {
+        PlayerController.GameStarted = false;
+
         GameManager gameManager = FindObjectOfType<GameManager>();
         if (gameManager == null)
         {
@@ -52,7 +54,7 @@ public class SceneBootstrap : MonoBehaviour
         ConfigurePlayer(player);
         ConfigureCamera();
         ConfigureUI();
-        levelManager.SpawnLevel(1);
+        ConfigureStartScreen();
     }
 
     private void ConfigureGrid(GridManager gridManager)
@@ -130,5 +132,17 @@ public class SceneBootstrap : MonoBehaviour
         {
             canvasObject.AddComponent<GameUI>();
         }
+    }
+
+    private void ConfigureStartScreen()
+    {
+        StartScreen startScreen = FindObjectOfType<StartScreen>();
+        if (startScreen != null)
+        {
+            return;
+        }
+
+        GameObject startScreenObject = new GameObject("StartScreen");
+        startScreenObject.AddComponent<StartScreen>();
     }
 }

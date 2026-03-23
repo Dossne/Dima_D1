@@ -67,7 +67,6 @@ public class GameManager : MonoBehaviour
 
     public void Respawn()
     {
-        CurrentHp = Mathf.Max(0, startingHp);
         IsGameOver = false;
         IsLevelComplete = false;
         currentLevel++;

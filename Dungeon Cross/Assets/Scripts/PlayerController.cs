@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    public static bool GameStarted = false;
+
     [SerializeField] private Vector2Int startGridPosition = new Vector2Int(3, 0);
     [SerializeField] private float swipeThreshold = 50f;
 
@@ -33,6 +35,7 @@ public class PlayerController : MonoBehaviour
 
     private void ReadKeyboardInput()
     {
+        if (!GameStarted) return;
         if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete)) return;
 
         if (Input.GetKeyDown(KeyCode.UpArrow))
@@ -115,6 +118,7 @@ public class PlayerController : MonoBehaviour
 
     private void TryMoveFromSwipe(Vector2 swipeDelta)
     {
+        if (!GameStarted) return;
         if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete)) return;
 
         if (swipeDelta.magnitude < swipeThreshold)
@@ -138,6 +142,7 @@ public class PlayerController : MonoBehaviour
 
     private void Move(Vector2Int direction)
     {
+        if (!GameStarted) return;
         if (GameManager.Instance != null && GameManager.Instance.IsLevelComplete) return;
 
         Debug.Log($"[MOVE START] Player pos: {currentGridPosition} | HP: {(GameManager.Instance != null ? GameManager.Instance.CurrentHp : -1)}");
