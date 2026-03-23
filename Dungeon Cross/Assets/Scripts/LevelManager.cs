@@ -114,25 +114,83 @@ public class LevelManager : MonoBehaviour
                 return new List<TrapRow>
                 {
                     new TrapRow(2, "boulder", 1, 1),
-                    new TrapRow(4, "arrow", 1, -1),
-                    new TrapRow(6, "boulder", 1, -1)
+                    new TrapRow(5, "boulder", 1, -1)
                 };
             case 2:
                 return new List<TrapRow>
                 {
-                    new TrapRow(1, "arrow", 1, 1),
-                    new TrapRow(3, "boulder", 2, -1),
-                    new TrapRow(5, "arrow", 2, 1),
-                    new TrapRow(7, "boulder", 1, 1)
+                    new TrapRow(3, "boulder", 1, 1),
+                    new TrapRow(6, "boulder", 1, -1)
                 };
-            default:
+            case 3:
+                return new List<TrapRow>
+                {
+                    new TrapRow(1, "boulder", 1, 1),
+                    new TrapRow(3, "boulder", 1, -1),
+                    new TrapRow(5, "boulder", 1, 1),
+                    new TrapRow(7, "arrow", 1, -1)
+                };
+            case 4:
+                return new List<TrapRow>
+                {
+                    new TrapRow(1, "boulder", 1, -1),
+                    new TrapRow(2, "boulder", 1, 1),
+                    new TrapRow(5, "boulder", 1, -1),
+                    new TrapRow(6, "arrow", 1, 1)
+                };
+            case 5:
+                return new List<TrapRow>
+                {
+                    new TrapRow(1, "boulder", 2, 1),
+                    new TrapRow(3, "boulder", 1, -1),
+                    new TrapRow(5, "arrow", 2, 1),
+                    new TrapRow(7, "boulder", 2, 1)
+                };
+            case 6:
+                return new List<TrapRow>
+                {
+                    new TrapRow(1, "arrow", 2, -1),
+                    new TrapRow(2, "boulder", 2, 1),
+                    new TrapRow(4, "boulder", 1, -1),
+                    new TrapRow(6, "arrow", 1, 1)
+                };
+            case 7:
+                return new List<TrapRow>
+                {
+                    new TrapRow(1, "boulder", 2, 1),
+                    new TrapRow(2, "arrow", 1, -1),
+                    new TrapRow(4, "boulder", 2, -1),
+                    new TrapRow(5, "arrow", 1, 1),
+                    new TrapRow(7, "boulder", 2, 1)
+                };
+            case 8:
+                return new List<TrapRow>
+                {
+                    new TrapRow(1, "arrow", 1, 1),
+                    new TrapRow(2, "boulder", 2, -1),
+                    new TrapRow(3, "boulder", 1, 1),
+                    new TrapRow(5, "arrow", 2, -1),
+                    new TrapRow(6, "boulder", 2, 1)
+                };
+            case 9:
                 return new List<TrapRow>
                 {
                     new TrapRow(1, "boulder", 2, 1),
                     new TrapRow(2, "arrow", 2, -1),
-                    new TrapRow(4, "boulder", 3, -1),
-                    new TrapRow(6, "arrow", 2, 1),
-                    new TrapRow(7, "boulder", 2, 1)
+                    new TrapRow(3, "boulder", 2, -1),
+                    new TrapRow(4, "arrow", 1, 1),
+                    new TrapRow(6, "boulder", 2, 1),
+                    new TrapRow(7, "arrow", 2, -1)
+                };
+            default:
+                return new List<TrapRow>
+                {
+                    new TrapRow(1, "arrow", 2, 1),
+                    new TrapRow(2, "boulder", 2, -1),
+                    new TrapRow(3, "arrow", 2, -1),
+                    new TrapRow(4, "boulder", 2, 1),
+                    new TrapRow(5, "boulder", 1, -1),
+                    new TrapRow(7, "arrow", 2, 1)
                 };
         }
     }

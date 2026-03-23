@@ -37,6 +37,7 @@ public class Boulder : TrapBase
     {
         if (GameManager.Instance != null)
         {
+            PlayHitFlash(player);
             GameManager.Instance.TakeDamage();
         }
     }

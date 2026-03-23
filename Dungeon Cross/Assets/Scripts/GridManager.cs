@@ -25,6 +25,7 @@ public class GridManager : MonoBehaviour
 
         Instance = this;
         RecalculateOrigin();
+        FitCameraToGrid();
     }
 
     private void OnValidate()
@@ -33,6 +34,7 @@ public class GridManager : MonoBehaviour
         rows = Mathf.Max(1, rows);
         cellSize = Mathf.Max(0.01f, cellSize);
         RecalculateOrigin();
+        FitCameraToGrid();
     }
 
     public Vector2Int ClampToBounds(Vector2Int gridPosition)
@@ -61,5 +63,31 @@ public class GridManager : MonoBehaviour
         float width = (columns - 1) * cellSize;
         float height = (rows - 1) * cellSize;
         origin = gridCenter - new Vector2(width * 0.5f, height * 0.5f);
+    }
+
+    private void FitCameraToGrid()
+    {
+        Camera cam = Camera.main;
+
+        if (cam == null)
+        {
+            cam = FindObjectOfType<Camera>();
+        }
+
+        if (cam == null)
+        {
+            return;
+        }
+
+        const float padding = 0.5f;
+        float gridWorldHeight = rows * cellSize;
+        float gridWorldWidth = columns * cellSize;
+        float camHeight = gridWorldHeight / 2f + padding;
+        float camWidth = gridWorldWidth / 2f + padding;
+        float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : cam.aspect;
+
+        cam.orthographic = true;
+        cam.orthographicSize = Mathf.Max(camHeight, camWidth / aspect);
+        cam.transform.position = new Vector3(gridCenter.x, gridCenter.y, cam.transform.position.z);
     }
 }

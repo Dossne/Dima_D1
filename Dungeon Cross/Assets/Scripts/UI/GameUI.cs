@@ -148,6 +148,10 @@ public class GameUI : MonoBehaviour
         waitingForContinue = true;
         waitingForRestart = false;
         ShowCenterMessage("LEVEL COMPLETE!", "Tap to continue");
+
+        GameObject effectObject = new GameObject("LevelCompleteEffect");
+        LevelCompleteEffect effect = effectObject.AddComponent<LevelCompleteEffect>();
+        effect.Play(Vector3.zero);
     }
 
     private void ShowCenterMessage(string mainMessage, string subMessage)

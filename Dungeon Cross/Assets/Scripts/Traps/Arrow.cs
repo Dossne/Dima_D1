@@ -21,6 +21,7 @@ public class Arrow : TrapBase
     {
         if (GameManager.Instance != null)
         {
+            PlayHitFlash(player);
             GameManager.Instance.TakeDamage();
         }
     }
