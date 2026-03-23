@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public static bool GameStarted = false;
     public static PlayerController Instance { get; private set; }
 
     [SerializeField] private float moveSpeed = 5f;
@@ -42,7 +41,7 @@ public class PlayerController : MonoBehaviour
             damageInvulnerabilityTimer -= Time.unscaledDeltaTime;
         }
 
-        if (!GameStarted)
+        if (GameManager.Instance == null || !GameManager.Instance.IsGameStarted)
         {
             MoveInput = Vector2.zero;
             return;

@@ -6,13 +6,13 @@ public class SceneBootstrap : MonoBehaviour
 {
     private void Awake()
     {
-        PlayerController.GameStarted = false;
-
         GameManager gameManager = FindObjectOfType<GameManager>();
         if (gameManager == null)
         {
             gameManager = new GameObject("GameManager").AddComponent<GameManager>();
         }
+
+        gameManager.ResetGame();
 
         GridManager gridManager = FindObjectOfType<GridManager>();
         if (gridManager == null)

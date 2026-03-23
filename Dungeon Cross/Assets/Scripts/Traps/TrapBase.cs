@@ -54,7 +54,7 @@ public abstract class TrapBase : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (!PlayerController.GameStarted)
+        if (GameManager.Instance == null || !GameManager.Instance.IsGameStarted)
         {
             return;
         }

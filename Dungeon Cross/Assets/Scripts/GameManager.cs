@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
     public bool IsGameOver { get; private set; }
     public bool IsLevelComplete { get; private set; }
     public bool IsPaused { get; private set; }
+    public bool IsGameStarted { get; private set; }
 
     private void Awake()
     {
@@ -86,6 +87,11 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
     }
 
+    public void BeginRun()
+    {
+        IsGameStarted = true;
+    }
+
     public void RestartGame()
     {
         CurrentHp = Mathf.Max(0, startingHp);
@@ -94,6 +100,7 @@ public class GameManager : MonoBehaviour
         IsGameOver = false;
         IsLevelComplete = false;
         IsPaused = false;
+        IsGameStarted = false;
         Time.timeScale = 1f;
 
         Scene activeScene = SceneManager.GetActiveScene();
@@ -131,6 +138,7 @@ public class GameManager : MonoBehaviour
         IsLevelComplete = false;
         StreakCount = 0;
         IsPaused = false;
+        IsGameStarted = false;
         Time.timeScale = 1f;
     }
 
