@@ -547,42 +547,75 @@ public class LevelEditorWindow : EditorWindow
     {
         Vector2Int cell = GetClampedCellFromMouse(previewRect, mousePosition);
         TrapPattern pattern = (TrapPattern)hazard.FindPropertyRelative("pattern").enumValueIndex;
+        bool changed = false;
 
         if (pattern == TrapPattern.Horizontal)
         {
-            int maxColumn = Mathf.Clamp(hazard.FindPropertyRelative("maxColumn").intValue, 1, Columns - 2);
-            int minColumn = Mathf.Clamp(hazard.FindPropertyRelative("minColumn").intValue, 1, Columns - 2);
+            SerializedProperty minColumnProperty = hazard.FindPropertyRelative("minColumn");
+            SerializedProperty maxColumnProperty = hazard.FindPropertyRelative("maxColumn");
+            int maxColumn = Mathf.Clamp(maxColumnProperty.intValue, 1, Columns - 2);
+            int minColumn = Mathf.Clamp(minColumnProperty.intValue, 1, Columns - 2);
             int column = Mathf.Clamp(cell.x, 1, Columns - 2);
 
             if (activeLinearHandle == LinearHandleType.Min)
             {
-                hazard.FindPropertyRelative("minColumn").intValue = Mathf.Min(column, maxColumn);
+                int nextValue = Mathf.Min(column, maxColumn);
+                if (minColumnProperty.intValue != nextValue)
+                {
+                    RecordLevelUndo("Resize Hazard Path");
+                    minColumnProperty.intValue = nextValue;
+                    changed = true;
+                }
             }
             else if (activeLinearHandle == LinearHandleType.Max)
             {
-                hazard.FindPropertyRelative("maxColumn").intValue = Mathf.Max(column, minColumn);
+                int nextValue = Mathf.Max(column, minColumn);
+                if (maxColumnProperty.intValue != nextValue)
+                {
+                    RecordLevelUndo("Resize Hazard Path");
+                    maxColumnProperty.intValue = nextValue;
+                    changed = true;
+                }
             }
         }
         else if (pattern == TrapPattern.Vertical)
         {
-            int minRow = Mathf.Clamp(hazard.FindPropertyRelative("minRow").intValue, 1, Rows - 2);
-            int maxRow = Mathf.Clamp(hazard.FindPropertyRelative("maxRow").intValue, 1, Rows - 2);
+            SerializedProperty minRowProperty = hazard.FindPropertyRelative("minRow");
+            SerializedProperty maxRowProperty = hazard.FindPropertyRelative("maxRow");
+            int minRow = Mathf.Clamp(minRowProperty.intValue, 1, Rows - 2);
+            int maxRow = Mathf.Clamp(maxRowProperty.intValue, 1, Rows - 2);
             int row = Mathf.Clamp(cell.y, 1, Rows - 2);
 
             if (activeLinearHandle == LinearHandleType.Min)
             {
-                hazard.FindPropertyRelative("minRow").intValue = Mathf.Min(row, maxRow);
+                int nextValue = Mathf.Min(row, maxRow);
+                if (minRowProperty.intValue != nextValue)
+                {
+                    RecordLevelUndo("Resize Hazard Path");
+                    minRowProperty.intValue = nextValue;
+                    changed = true;
+                }
             }
             else if (activeLinearHandle == LinearHandleType.Max)
             {
-                hazard.FindPropertyRelative("maxRow").intValue = Mathf.Max(row, minRow);
+                int nextValue = Mathf.Max(row, minRow);
+                if (maxRowProperty.intValue != nextValue)
+                {
+                    RecordLevelUndo("Resize Hazard Path");
+                    maxRowProperty.intValue = nextValue;
+                    changed = true;
+                }
             }
+        }
+
+        if (!changed)
+        {
+            return;
         }
 
         serializedConfig.ApplyModifiedProperties();
         EditorUtility.SetDirty(selectedConfig);
     }
-
     private Rect GetHandleRect(Rect cellRect)
     {
         float size = 12f;
@@ -692,6 +725,7 @@ public class LevelEditorWindow : EditorWindow
                 return;
             }
 
+            RecordLevelUndo("Paint Walls");
             int newIndex = wallCellsProperty.arraySize;
             wallCellsProperty.InsertArrayElementAtIndex(newIndex);
             SerializedProperty wallCell = wallCellsProperty.GetArrayElementAtIndex(newIndex);
@@ -700,21 +734,25 @@ public class LevelEditorWindow : EditorWindow
         }
         else if (existingIndex >= 0)
         {
+            RecordLevelUndo("Erase Walls");
             wallCellsProperty.DeleteArrayElementAtIndex(existingIndex);
+        }
+        else
+        {
+            return;
         }
 
         serializedConfig.ApplyModifiedProperties();
         EditorUtility.SetDirty(selectedConfig);
     }
-
     private void AddHazardAtCell(Vector2Int cell)
     {
+        RecordLevelUndo("Add Hazard");
         int index = hazardsProperty.arraySize;
         hazardsProperty.InsertArrayElementAtIndex(index);
         SerializedProperty hazard = hazardsProperty.GetArrayElementAtIndex(index);
         ApplyBrushToHazard(hazard, cell);
     }
-
     private void ApplyBrushToHazard(SerializedProperty hazard, Vector2Int cell)
     {
         hazard.FindPropertyRelative("trapType").enumValueIndex = (int)brushTrapType;
@@ -775,7 +813,18 @@ public class LevelEditorWindow : EditorWindow
         }
 
         SerializedProperty hazard = hazardsProperty.GetArrayElementAtIndex(selectedHazardIndex);
-        TrapPattern previousPattern = (TrapPattern)hazard.FindPropertyRelative("pattern").enumValueIndex;
+        SerializedProperty startRowProperty = hazard.FindPropertyRelative("startRow");
+        SerializedProperty startColumnProperty = hazard.FindPropertyRelative("startColumn");
+        SerializedProperty trapTypeProperty = hazard.FindPropertyRelative("trapType");
+        SerializedProperty patternProperty = hazard.FindPropertyRelative("pattern");
+        SerializedProperty moveIntervalProperty = hazard.FindPropertyRelative("moveInterval");
+        SerializedProperty dangerRadiusProperty = hazard.FindPropertyRelative("dangerRadius");
+        SerializedProperty directionProperty = hazard.FindPropertyRelative("direction");
+        SerializedProperty useOrbitingBladeProperty = hazard.FindPropertyRelative("useOrbitingBlade");
+        SerializedProperty orbitRadiusProperty = hazard.FindPropertyRelative("orbitRadius");
+        SerializedProperty orbitBladeRadiusProperty = hazard.FindPropertyRelative("orbitBladeRadius");
+        SerializedProperty orbitAngularSpeedProperty = hazard.FindPropertyRelative("orbitAngularSpeed");
+        TrapPattern previousPattern = (TrapPattern)patternProperty.enumValueIndex;
 
         using (new EditorGUILayout.VerticalScope("box"))
         {
@@ -783,41 +832,35 @@ public class LevelEditorWindow : EditorWindow
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                hazard.FindPropertyRelative("startRow").intValue = EditorGUILayout.IntSlider("Row", hazard.FindPropertyRelative("startRow").intValue, 0, Rows - 1);
-                hazard.FindPropertyRelative("startColumn").intValue = EditorGUILayout.IntSlider("Col", hazard.FindPropertyRelative("startColumn").intValue, 0, Columns - 1);
+                SetIntPropertyWithUndo(startRowProperty, EditorGUILayout.IntSlider("Row", startRowProperty.intValue, 0, Rows - 1), "Edit Hazard");
+                SetIntPropertyWithUndo(startColumnProperty, EditorGUILayout.IntSlider("Col", startColumnProperty.intValue, 0, Columns - 1), "Edit Hazard");
             }
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                hazard.FindPropertyRelative("trapType").enumValueIndex = EditorGUILayout.Popup("Type", hazard.FindPropertyRelative("trapType").enumValueIndex, new[] { "Boulder", "Arrow" });
-                hazard.FindPropertyRelative("pattern").enumValueIndex = EditorGUILayout.Popup("Pattern", hazard.FindPropertyRelative("pattern").enumValueIndex, new[] { "H", "V", "S" });
+                SetEnumPropertyWithUndo(trapTypeProperty, EditorGUILayout.Popup("Type", trapTypeProperty.enumValueIndex, new[] { "Boulder", "Arrow" }), "Edit Hazard");
+                SetEnumPropertyWithUndo(patternProperty, EditorGUILayout.Popup("Pattern", patternProperty.enumValueIndex, new[] { "H", "V", "S" }), "Edit Hazard");
             }
 
-            TrapPattern currentPattern = (TrapPattern)hazard.FindPropertyRelative("pattern").enumValueIndex;
-            if (currentPattern != previousPattern)
-            {
-                EnsureHazardBounds(hazard, true);
-            }
-            else
-            {
-                EnsureHazardBounds(hazard, false);
-            }
+            TrapPattern currentPattern = (TrapPattern)patternProperty.enumValueIndex;
+            EnsureHazardBounds(hazard, currentPattern != previousPattern, "Edit Hazard");
 
             DrawLinearBoundsFieldsForSelectedHazard(hazard);
 
-            hazard.FindPropertyRelative("moveInterval").floatValue = EditorGUILayout.Slider("Move Interval", hazard.FindPropertyRelative("moveInterval").floatValue, 0.2f, 2f);
-            hazard.FindPropertyRelative("dangerRadius").floatValue = EditorGUILayout.Slider("Danger Radius", hazard.FindPropertyRelative("dangerRadius").floatValue, 0.2f, 1.25f);
+            SetFloatPropertyWithUndo(moveIntervalProperty, EditorGUILayout.Slider("Move Interval", moveIntervalProperty.floatValue, 0.2f, 2f), "Edit Hazard");
+            SetFloatPropertyWithUndo(dangerRadiusProperty, EditorGUILayout.Slider("Danger Radius", dangerRadiusProperty.floatValue, 0.2f, 1.25f), "Edit Hazard");
 
-            int directionIndex = hazard.FindPropertyRelative("direction").intValue >= 0 ? 0 : 1;
+            int directionIndex = directionProperty.intValue >= 0 ? 0 : 1;
             directionIndex = EditorGUILayout.Popup("Direction", directionIndex, new[] { "+1", "-1" });
-            hazard.FindPropertyRelative("direction").intValue = directionIndex == 0 ? 1 : -1;
+            SetIntPropertyWithUndo(directionProperty, directionIndex == 0 ? 1 : -1, "Edit Hazard");
 
-            hazard.FindPropertyRelative("useOrbitingBlade").boolValue = EditorGUILayout.Toggle("Orbiting Blade", hazard.FindPropertyRelative("useOrbitingBlade").boolValue);
-            if (hazard.FindPropertyRelative("useOrbitingBlade").boolValue)
+            bool useOrbitingBlade = EditorGUILayout.Toggle("Orbiting Blade", useOrbitingBladeProperty.boolValue);
+            SetBoolPropertyWithUndo(useOrbitingBladeProperty, useOrbitingBlade, "Edit Hazard");
+            if (useOrbitingBladeProperty.boolValue)
             {
-                hazard.FindPropertyRelative("orbitRadius").floatValue = EditorGUILayout.Slider("Orbit Radius", hazard.FindPropertyRelative("orbitRadius").floatValue, 0.25f, 1.5f);
-                hazard.FindPropertyRelative("orbitBladeRadius").floatValue = EditorGUILayout.Slider("Blade Radius", hazard.FindPropertyRelative("orbitBladeRadius").floatValue, 0.1f, 0.75f);
-                hazard.FindPropertyRelative("orbitAngularSpeed").floatValue = EditorGUILayout.Slider("Blade Speed", hazard.FindPropertyRelative("orbitAngularSpeed").floatValue, 30f, 360f);
+                SetFloatPropertyWithUndo(orbitRadiusProperty, EditorGUILayout.Slider("Orbit Radius", orbitRadiusProperty.floatValue, 0.25f, 1.5f), "Edit Hazard");
+                SetFloatPropertyWithUndo(orbitBladeRadiusProperty, EditorGUILayout.Slider("Blade Radius", orbitBladeRadiusProperty.floatValue, 0.1f, 0.75f), "Edit Hazard");
+                SetFloatPropertyWithUndo(orbitAngularSpeedProperty, EditorGUILayout.Slider("Blade Speed", orbitAngularSpeedProperty.floatValue, 30f, 360f), "Edit Hazard");
             }
 
             using (new EditorGUILayout.HorizontalScope())
@@ -849,16 +892,16 @@ public class LevelEditorWindow : EditorWindow
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                hazard.FindPropertyRelative("minColumn").intValue = EditorGUILayout.IntSlider("Min Col", hazard.FindPropertyRelative("minColumn").intValue, 1, Columns - 2);
-                hazard.FindPropertyRelative("maxColumn").intValue = EditorGUILayout.IntSlider("Max Col", hazard.FindPropertyRelative("maxColumn").intValue, 1, Columns - 2);
+                SetIntPropertyWithUndo(hazard.FindPropertyRelative("minColumn"), EditorGUILayout.IntSlider("Min Col", hazard.FindPropertyRelative("minColumn").intValue, 1, Columns - 2), "Edit Hazard");
+                SetIntPropertyWithUndo(hazard.FindPropertyRelative("maxColumn"), EditorGUILayout.IntSlider("Max Col", hazard.FindPropertyRelative("maxColumn").intValue, 1, Columns - 2), "Edit Hazard");
             }
         }
         else if (pattern == TrapPattern.Vertical)
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                hazard.FindPropertyRelative("minRow").intValue = EditorGUILayout.IntSlider("Min Row", hazard.FindPropertyRelative("minRow").intValue, 1, Rows - 2);
-                hazard.FindPropertyRelative("maxRow").intValue = EditorGUILayout.IntSlider("Max Row", hazard.FindPropertyRelative("maxRow").intValue, 1, Rows - 2);
+                SetIntPropertyWithUndo(hazard.FindPropertyRelative("minRow"), EditorGUILayout.IntSlider("Min Row", hazard.FindPropertyRelative("minRow").intValue, 1, Rows - 2), "Edit Hazard");
+                SetIntPropertyWithUndo(hazard.FindPropertyRelative("maxRow"), EditorGUILayout.IntSlider("Max Row", hazard.FindPropertyRelative("maxRow").intValue, 1, Rows - 2), "Edit Hazard");
             }
         }
         else
@@ -866,9 +909,8 @@ public class LevelEditorWindow : EditorWindow
             EditorGUILayout.HelpBox("Square path stays fixed at 3x3 in this version.", MessageType.None);
         }
 
-        EnsureHazardBounds(hazard, false);
+        EnsureHazardBounds(hazard, false, "Edit Hazard");
     }
-
     private void DuplicateSelectedHazard()
     {
         if (selectedHazardIndex < 0 || selectedHazardIndex >= hazardsProperty.arraySize)
@@ -876,6 +918,7 @@ public class LevelEditorWindow : EditorWindow
             return;
         }
 
+        RecordLevelUndo("Duplicate Hazard");
         SerializedProperty source = hazardsProperty.GetArrayElementAtIndex(selectedHazardIndex);
         int newIndex = hazardsProperty.arraySize;
         hazardsProperty.InsertArrayElementAtIndex(newIndex);
@@ -901,7 +944,6 @@ public class LevelEditorWindow : EditorWindow
         serializedConfig.ApplyModifiedProperties();
         EditorUtility.SetDirty(selectedConfig);
     }
-
     private void DeleteSelectedHazard()
     {
         if (selectedHazardIndex < 0 || selectedHazardIndex >= hazardsProperty.arraySize)
@@ -909,6 +951,7 @@ public class LevelEditorWindow : EditorWindow
             return;
         }
 
+        RecordLevelUndo("Delete Hazard");
         hazardsProperty.DeleteArrayElementAtIndex(selectedHazardIndex);
         selectedHazardIndex = Mathf.Clamp(selectedHazardIndex, 0, hazardsProperty.arraySize - 1);
         if (hazardsProperty.arraySize == 0)
@@ -920,6 +963,59 @@ public class LevelEditorWindow : EditorWindow
         EditorUtility.SetDirty(selectedConfig);
     }
 
+    private void RecordLevelUndo(string action)
+    {
+        if (selectedConfig == null)
+        {
+            return;
+        }
+
+        Undo.RecordObject(selectedConfig, action);
+    }
+
+    private void SetIntPropertyWithUndo(SerializedProperty property, int value, string action)
+    {
+        if (property.intValue == value)
+        {
+            return;
+        }
+
+        RecordLevelUndo(action);
+        property.intValue = value;
+    }
+
+    private void SetFloatPropertyWithUndo(SerializedProperty property, float value, string action)
+    {
+        if (Mathf.Approximately(property.floatValue, value))
+        {
+            return;
+        }
+
+        RecordLevelUndo(action);
+        property.floatValue = value;
+    }
+
+    private void SetBoolPropertyWithUndo(SerializedProperty property, bool value, string action)
+    {
+        if (property.boolValue == value)
+        {
+            return;
+        }
+
+        RecordLevelUndo(action);
+        property.boolValue = value;
+    }
+
+    private void SetEnumPropertyWithUndo(SerializedProperty property, int value, string action)
+    {
+        if (property.enumValueIndex == value)
+        {
+            return;
+        }
+
+        RecordLevelUndo(action);
+        property.enumValueIndex = value;
+    }
     private void DrawValidationPanel()
     {
         List<string> warnings = BuildWarnings();
@@ -1227,22 +1323,31 @@ public class LevelEditorWindow : EditorWindow
 
         return result;
     }
-    private void EnsureHazardBounds(SerializedProperty hazard, bool resetForPattern)
+    private void EnsureHazardBounds(SerializedProperty hazard, bool resetForPattern, string undoAction = null)
     {
+        SerializedProperty startColumnProperty = hazard.FindPropertyRelative("startColumn");
+        SerializedProperty startRowProperty = hazard.FindPropertyRelative("startRow");
+        SerializedProperty minColumnProperty = hazard.FindPropertyRelative("minColumn");
+        SerializedProperty maxColumnProperty = hazard.FindPropertyRelative("maxColumn");
+        SerializedProperty minRowProperty = hazard.FindPropertyRelative("minRow");
+        SerializedProperty maxRowProperty = hazard.FindPropertyRelative("maxRow");
+
         TrapPattern pattern = (TrapPattern)hazard.FindPropertyRelative("pattern").enumValueIndex;
-        int startColumn = Mathf.Clamp(hazard.FindPropertyRelative("startColumn").intValue, 0, Columns - 1);
-        int startRow = Mathf.Clamp(hazard.FindPropertyRelative("startRow").intValue, 0, Rows - 1);
+        int startColumn = Mathf.Clamp(startColumnProperty.intValue, 0, Columns - 1);
+        int startRow = Mathf.Clamp(startRowProperty.intValue, 0, Rows - 1);
+        int targetMinColumn;
+        int targetMaxColumn;
+        int targetMinRow;
+        int targetMaxRow;
 
         if (pattern == TrapPattern.Horizontal)
         {
-            if (resetForPattern || AreHorizontalBoundsUnset(hazard))
-            {
-                hazard.FindPropertyRelative("minColumn").intValue = 1;
-                hazard.FindPropertyRelative("maxColumn").intValue = Columns - 2;
-            }
-
-            int minColumn = Mathf.Clamp(hazard.FindPropertyRelative("minColumn").intValue, 1, Columns - 2);
-            int maxColumn = Mathf.Clamp(hazard.FindPropertyRelative("maxColumn").intValue, 1, Columns - 2);
+            int minColumn = resetForPattern || AreHorizontalBoundsUnset(hazard)
+                ? 1
+                : Mathf.Clamp(minColumnProperty.intValue, 1, Columns - 2);
+            int maxColumn = resetForPattern || AreHorizontalBoundsUnset(hazard)
+                ? Columns - 2
+                : Mathf.Clamp(maxColumnProperty.intValue, 1, Columns - 2);
             if (minColumn > maxColumn)
             {
                 int swap = minColumn;
@@ -1250,21 +1355,19 @@ public class LevelEditorWindow : EditorWindow
                 maxColumn = swap;
             }
 
-            hazard.FindPropertyRelative("minColumn").intValue = minColumn;
-            hazard.FindPropertyRelative("maxColumn").intValue = maxColumn;
-            hazard.FindPropertyRelative("minRow").intValue = Mathf.Max(1, startRow - 2);
-            hazard.FindPropertyRelative("maxRow").intValue = Mathf.Min(Rows - 2, startRow + 2);
+            targetMinColumn = minColumn;
+            targetMaxColumn = maxColumn;
+            targetMinRow = Mathf.Max(1, startRow - 2);
+            targetMaxRow = Mathf.Min(Rows - 2, startRow + 2);
         }
         else if (pattern == TrapPattern.Vertical)
         {
-            if (resetForPattern || AreVerticalBoundsUnset(hazard))
-            {
-                hazard.FindPropertyRelative("minRow").intValue = Mathf.Max(1, startRow - 2);
-                hazard.FindPropertyRelative("maxRow").intValue = Mathf.Min(Rows - 2, startRow + 2);
-            }
-
-            int minRow = Mathf.Clamp(hazard.FindPropertyRelative("minRow").intValue, 1, Rows - 2);
-            int maxRow = Mathf.Clamp(hazard.FindPropertyRelative("maxRow").intValue, 1, Rows - 2);
+            int minRow = resetForPattern || AreVerticalBoundsUnset(hazard)
+                ? Mathf.Max(1, startRow - 2)
+                : Mathf.Clamp(minRowProperty.intValue, 1, Rows - 2);
+            int maxRow = resetForPattern || AreVerticalBoundsUnset(hazard)
+                ? Mathf.Min(Rows - 2, startRow + 2)
+                : Mathf.Clamp(maxRowProperty.intValue, 1, Rows - 2);
             if (minRow > maxRow)
             {
                 int swap = minRow;
@@ -1272,20 +1375,38 @@ public class LevelEditorWindow : EditorWindow
                 maxRow = swap;
             }
 
-            hazard.FindPropertyRelative("minColumn").intValue = 1;
-            hazard.FindPropertyRelative("maxColumn").intValue = Columns - 2;
-            hazard.FindPropertyRelative("minRow").intValue = minRow;
-            hazard.FindPropertyRelative("maxRow").intValue = maxRow;
+            targetMinColumn = 1;
+            targetMaxColumn = Columns - 2;
+            targetMinRow = minRow;
+            targetMaxRow = maxRow;
         }
         else
         {
-            ApplyDefaultSquareBounds(hazard);
+            targetMinColumn = 1;
+            targetMaxColumn = Columns - 2;
+            targetMinRow = Mathf.Max(1, startRow - 2);
+            targetMaxRow = Mathf.Min(Rows - 2, startRow + 2);
         }
 
-        hazard.FindPropertyRelative("startColumn").intValue = startColumn;
-        hazard.FindPropertyRelative("startRow").intValue = startRow;
-    }
+        bool changed = startColumnProperty.intValue != startColumn
+            || startRowProperty.intValue != startRow
+            || minColumnProperty.intValue != targetMinColumn
+            || maxColumnProperty.intValue != targetMaxColumn
+            || minRowProperty.intValue != targetMinRow
+            || maxRowProperty.intValue != targetMaxRow;
 
+        if (changed && !string.IsNullOrEmpty(undoAction))
+        {
+            RecordLevelUndo(undoAction);
+        }
+
+        minColumnProperty.intValue = targetMinColumn;
+        maxColumnProperty.intValue = targetMaxColumn;
+        minRowProperty.intValue = targetMinRow;
+        maxRowProperty.intValue = targetMaxRow;
+        startColumnProperty.intValue = startColumn;
+        startRowProperty.intValue = startRow;
+    }
     private void ApplyDefaultSquareBounds(SerializedProperty hazard)
     {
         int startRow = Mathf.Clamp(hazard.FindPropertyRelative("startRow").intValue, 0, Rows - 1);
