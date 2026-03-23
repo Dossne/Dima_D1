@@ -334,10 +334,11 @@ public class LevelEditorWindow : EditorWindow
 
     private void DrawHazardPreview(Rect previewRect)
     {
+        HashSet<Vector2Int> wallCells = BuildWallCellSet();
+
         for (int i = 0; i < hazardsProperty.arraySize; i++)
         {
             SerializedProperty hazard = hazardsProperty.GetArrayElementAtIndex(i);
-            EnsureHazardBounds(hazard, false);
 
             int startColumn = hazard.FindPropertyRelative("startColumn").intValue;
             int startRow = hazard.FindPropertyRelative("startRow").intValue;
@@ -347,6 +348,7 @@ public class LevelEditorWindow : EditorWindow
             TrapType trapType = (TrapType)hazard.FindPropertyRelative("trapType").enumValueIndex;
             TrapPattern pattern = (TrapPattern)hazard.FindPropertyRelative("pattern").enumValueIndex;
             bool isSelected = i == selectedHazardIndex;
+            bool hasValidationIssues = HasHazardValidationIssues(i, hazard, wallCells);
 
             List<Vector2Int> pathCells = BuildHazardPreviewCells(hazard);
             Color pathColor = isSelected
@@ -393,7 +395,7 @@ public class LevelEditorWindow : EditorWindow
 
             if (isSelected)
             {
-                DrawOutline(cellRect, new Color(1f, 1f, 1f, 0.95f), 2f);
+                DrawOutline(cellRect, hasValidationIssues ? new Color(1f, 0.82f, 0.2f, 1f) : new Color(1f, 1f, 1f, 0.95f), 2f);
             }
         }
     }
@@ -642,6 +644,8 @@ public class LevelEditorWindow : EditorWindow
                 }
             }
         }
+
+        DrawSelectedHazardWarnings(hazard);
     }
     private void DrawLinearBoundsFieldsForSelectedHazard(SerializedProperty hazard)
     {
@@ -733,6 +737,132 @@ public class LevelEditorWindow : EditorWindow
     private List<string> BuildWarnings()
     {
         List<string> warnings = new List<string>();
+        HashSet<Vector2Int> wallCells = BuildWallCellSet();
+
+        for (int i = 0; i < hazardsProperty.arraySize; i++)
+        {
+            SerializedProperty hazard = hazardsProperty.GetArrayElementAtIndex(i);
+            warnings.AddRange(BuildHazardWarnings(i, hazard, wallCells, false));
+        }
+
+        return warnings;
+    }
+
+    private void DrawSelectedHazardWarnings(SerializedProperty hazard)
+    {
+        List<string> warnings = BuildHazardWarnings(selectedHazardIndex, hazard, BuildWallCellSet(), true);
+        if (warnings.Count == 0)
+        {
+            return;
+        }
+
+        EditorGUILayout.Space(8f);
+        EditorGUILayout.LabelField("Selected Hazard Warnings", EditorStyles.boldLabel);
+        for (int i = 0; i < warnings.Count; i++)
+        {
+            EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
+        }
+    }
+
+    private List<string> BuildHazardWarnings(int hazardIndex, SerializedProperty hazard, HashSet<Vector2Int> wallCells, bool includeDuplicateDetails)
+    {
+        List<string> warnings = new List<string>();
+        Vector2Int startCell = GetHazardStartCell(hazard);
+        TrapPattern pattern = (TrapPattern)hazard.FindPropertyRelative("pattern").enumValueIndex;
+
+        if (!IsInsideRoomBounds(startCell))
+        {
+            warnings.Add($"Hazard {hazardIndex + 1} start cell ({startCell.x}, {startCell.y}) is out of room bounds.");
+        }
+
+        if (startCell.y == 0 || startCell.y == Rows - 1)
+        {
+            warnings.Add($"Hazard {hazardIndex + 1} is placed on reserved row {startCell.y}. Entry/exit rows are usually kept clear.");
+        }
+
+        if (wallCells.Contains(startCell))
+        {
+            warnings.Add($"Hazard {hazardIndex + 1} starts inside a wall at ({startCell.x}, {startCell.y}).");
+        }
+
+        int duplicateIndex = FindDuplicateHazardIndex(hazardIndex, startCell);
+        if (duplicateIndex >= 0 && (includeDuplicateDetails || duplicateIndex > hazardIndex))
+        {
+            warnings.Add($"Hazard {hazardIndex + 1} shares start cell ({startCell.x}, {startCell.y}) with hazard {duplicateIndex + 1}.");
+        }
+
+        if (pattern == TrapPattern.Horizontal)
+        {
+            AppendLinearRangeWarnings(
+                warnings,
+                hazardIndex,
+                "column",
+                hazard.FindPropertyRelative("minColumn").intValue,
+                hazard.FindPropertyRelative("maxColumn").intValue,
+                1,
+                Columns - 2);
+        }
+        else if (pattern == TrapPattern.Vertical)
+        {
+            AppendLinearRangeWarnings(
+                warnings,
+                hazardIndex,
+                "row",
+                hazard.FindPropertyRelative("minRow").intValue,
+                hazard.FindPropertyRelative("maxRow").intValue,
+                1,
+                Rows - 2);
+        }
+
+        List<Vector2Int> trajectory = BuildHazardPreviewCells(hazard);
+        if ((pattern == TrapPattern.Horizontal || pattern == TrapPattern.Vertical) && trajectory.Count <= 1)
+        {
+            warnings.Add($"Hazard {hazardIndex + 1} path collapses to a single cell and will not meaningfully move.");
+        }
+
+        for (int cellIndex = 0; cellIndex < trajectory.Count; cellIndex++)
+        {
+            if (!wallCells.Contains(trajectory[cellIndex]))
+            {
+                continue;
+            }
+
+            warnings.Add($"Hazard {hazardIndex + 1} trajectory intersects a wall at ({trajectory[cellIndex].x}, {trajectory[cellIndex].y}).");
+            break;
+        }
+
+        return warnings;
+    }
+
+    private void AppendLinearRangeWarnings(List<string> warnings, int hazardIndex, string axisLabel, int minValue, int maxValue, int validMin, int validMax)
+    {
+        if (minValue < validMin || minValue > validMax || maxValue < validMin || maxValue > validMax)
+        {
+            warnings.Add($"Hazard {hazardIndex + 1} {axisLabel} path range ({minValue}..{maxValue}) extends outside valid room bounds ({validMin}..{validMax}).");
+        }
+
+        if (minValue > maxValue)
+        {
+            warnings.Add($"Hazard {hazardIndex + 1} has inverted {axisLabel} path range ({minValue} > {maxValue}).");
+        }
+
+        int clampedMin = Mathf.Clamp(minValue, validMin, validMax);
+        int clampedMax = Mathf.Clamp(maxValue, validMin, validMax);
+        if (clampedMin > clampedMax)
+        {
+            int swap = clampedMin;
+            clampedMin = clampedMax;
+            clampedMax = swap;
+        }
+
+        if (clampedMin == clampedMax)
+        {
+            warnings.Add($"Hazard {hazardIndex + 1} {axisLabel} path range collapses to {clampedMin}, so the linear pattern has no travel distance.");
+        }
+    }
+
+    private HashSet<Vector2Int> BuildWallCellSet()
+    {
         HashSet<Vector2Int> wallCells = new HashSet<Vector2Int>();
 
         for (int i = 0; i < wallCellsProperty.arraySize; i++)
@@ -743,38 +873,43 @@ public class LevelEditorWindow : EditorWindow
                 wallCell.FindPropertyRelative("row").intValue));
         }
 
+        return wallCells;
+    }
+
+    private bool HasHazardValidationIssues(int hazardIndex, SerializedProperty hazard, HashSet<Vector2Int> wallCells)
+    {
+        return BuildHazardWarnings(hazardIndex, hazard, wallCells, true).Count > 0;
+    }
+
+    private Vector2Int GetHazardStartCell(SerializedProperty hazard)
+    {
+        return new Vector2Int(
+            hazard.FindPropertyRelative("startColumn").intValue,
+            hazard.FindPropertyRelative("startRow").intValue);
+    }
+
+    private bool IsInsideRoomBounds(Vector2Int cell)
+    {
+        return cell.x >= 0 && cell.x < Columns && cell.y >= 0 && cell.y < Rows;
+    }
+
+    private int FindDuplicateHazardIndex(int hazardIndex, Vector2Int startCell)
+    {
         for (int i = 0; i < hazardsProperty.arraySize; i++)
         {
-            SerializedProperty hazard = hazardsProperty.GetArrayElementAtIndex(i);
-            EnsureHazardBounds(hazard, false);
-            Vector2Int startCell = new Vector2Int(
-                hazard.FindPropertyRelative("startColumn").intValue,
-                hazard.FindPropertyRelative("startRow").intValue);
-
-            if (startCell.y == 0 || startCell.y == Rows - 1)
+            if (i == hazardIndex)
             {
-                warnings.Add($"Hazard {i + 1} is placed on reserved row {startCell.y}. Entry/exit rows are usually kept clear.");
+                continue;
             }
 
-            if (wallCells.Contains(startCell))
+            SerializedProperty otherHazard = hazardsProperty.GetArrayElementAtIndex(i);
+            if (GetHazardStartCell(otherHazard) == startCell)
             {
-                warnings.Add($"Hazard {i + 1} starts inside a wall at ({startCell.x}, {startCell.y}).");
-            }
-
-            List<Vector2Int> trajectory = BuildHazardPreviewCells(hazard);
-            for (int cellIndex = 0; cellIndex < trajectory.Count; cellIndex++)
-            {
-                if (!wallCells.Contains(trajectory[cellIndex]))
-                {
-                    continue;
-                }
-
-                warnings.Add($"Hazard {i + 1} trajectory intersects a wall at ({trajectory[cellIndex].x}, {trajectory[cellIndex].y}).");
-                break;
+                return i;
             }
         }
 
-        return warnings;
+        return -1;
     }
 
     private List<Vector2Int> BuildHazardPreviewCells(SerializedProperty hazard)
@@ -1224,3 +1359,6 @@ public class LevelEditorWindow : EditorWindow
         EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
     }
 }
+
+
+
