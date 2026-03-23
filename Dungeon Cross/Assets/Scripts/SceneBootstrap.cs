@@ -6,8 +6,6 @@ using UnityEngine.UI;
 public class SceneBootstrap : MonoBehaviour
 {
     private static readonly FieldInfo GridCenterField = typeof(GridManager).GetField("gridCenter", BindingFlags.Instance | BindingFlags.NonPublic);
-    private static readonly FieldInfo PlayerStartGridPositionField = typeof(PlayerController).GetField("startGridPosition", BindingFlags.Instance | BindingFlags.NonPublic);
-    private static readonly MethodInfo RecalculateOriginMethod = typeof(GridManager).GetMethod("RecalculateOrigin", BindingFlags.Instance | BindingFlags.NonPublic);
 
     private void Awake()
     {
@@ -28,16 +26,14 @@ public class SceneBootstrap : MonoBehaviour
         ConfigureGrid(gridManager);
         ConfigureDungeonVisual();
 
-        TrapManager trapManager = FindObjectOfType<TrapManager>();
-        if (trapManager == null)
+        if (FindObjectOfType<TrapManager>() == null)
         {
-            trapManager = new GameObject("TrapManager").AddComponent<TrapManager>();
+            new GameObject("TrapManager").AddComponent<TrapManager>();
         }
 
-        LevelManager levelManager = FindObjectOfType<LevelManager>();
-        if (levelManager == null)
+        if (FindObjectOfType<LevelManager>() == null)
         {
-            levelManager = new GameObject("LevelManager").AddComponent<LevelManager>();
+            new GameObject("LevelManager").AddComponent<LevelManager>();
         }
 
         PlayerController player = FindObjectOfType<PlayerController>();
@@ -52,7 +48,7 @@ public class SceneBootstrap : MonoBehaviour
             player.gameObject.AddComponent<PlayerVisual>();
         }
 
-        ConfigurePlayer(player);
+        player.RespawnToStart();
         ConfigureCamera();
         ConfigureUI();
         ConfigurePauseMenu();
@@ -62,18 +58,7 @@ public class SceneBootstrap : MonoBehaviour
     private void ConfigureGrid(GridManager gridManager)
     {
         GridCenterField?.SetValue(gridManager, new Vector2(4f, 5.5f));
-        RecalculateOriginMethod?.Invoke(gridManager, null);
-    }
-
-    private void ConfigurePlayer(PlayerController player)
-    {
-        Vector2Int startGridPosition = new Vector2Int(4, 0);
-        PlayerStartGridPositionField?.SetValue(player, startGridPosition);
-
-        if (GridManager.Instance != null)
-        {
-            player.transform.position = GridManager.Instance.GridToWorld(startGridPosition);
-        }
+        typeof(GridManager).GetMethod("RecalculateOrigin", BindingFlags.Instance | BindingFlags.NonPublic)?.Invoke(gridManager, null);
     }
 
     private void ConfigureCamera()
@@ -91,9 +76,10 @@ public class SceneBootstrap : MonoBehaviour
             targetCamera.tag = "MainCamera";
         }
 
-        targetCamera.orthographic = true;
-        targetCamera.orthographicSize = 5f;
-        targetCamera.transform.position = new Vector3(4f, 5.5f, -10f);
+        if (GridManager.Instance != null)
+        {
+            GridManager.Instance.FitCameraToGrid();
+        }
     }
 
     private void ConfigureUI()
@@ -138,25 +124,18 @@ public class SceneBootstrap : MonoBehaviour
 
     private void ConfigurePauseMenu()
     {
-        if (FindObjectOfType<PauseMenu>() != null)
+        if (FindObjectOfType<PauseMenu>() == null)
         {
-            return;
+            new GameObject("PauseMenu").AddComponent<PauseMenu>();
         }
-
-        GameObject pauseMenuObject = new GameObject("PauseMenu");
-        pauseMenuObject.AddComponent<PauseMenu>();
     }
 
     private void ConfigureStartScreen()
     {
-        StartScreen startScreen = FindObjectOfType<StartScreen>();
-        if (startScreen != null)
+        if (FindObjectOfType<StartScreen>() == null)
         {
-            return;
+            new GameObject("StartScreen").AddComponent<StartScreen>();
         }
-
-        GameObject startScreenObject = new GameObject("StartScreen");
-        startScreenObject.AddComponent<StartScreen>();
     }
 
     private void ConfigureDungeonVisual()

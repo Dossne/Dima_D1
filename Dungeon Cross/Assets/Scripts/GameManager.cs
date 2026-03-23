@@ -36,7 +36,7 @@ public class GameManager : MonoBehaviour
 
     public void TakeDamage(int amount = 1)
     {
-        if (IsGameOver)
+        if (IsGameOver || IsLevelComplete)
         {
             return;
         }
@@ -54,22 +54,27 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void CheckWin(Vector2Int playerGridPosition)
+    public void CheckWin(Vector2 playerWorldPosition)
     {
-        if (IsGameOver || IsLevelComplete)
+        if (IsGameOver || IsLevelComplete || GridManager.Instance == null)
         {
             return;
         }
 
-        if (playerGridPosition == new Vector2Int(4, 11))
+        Vector2 exitPosition = (Vector2)GridManager.Instance.GetExitWorldPosition();
+        float winRadius = GridManager.Instance.CellSize * 0.4f;
+
+        if (Vector2.Distance(playerWorldPosition, exitPosition) > winRadius)
         {
-            IsLevelComplete = true;
-            StreakCount++;
-            UpdateBestStreak();
-            IsPaused = false;
-            Time.timeScale = 0f;
-            OnLevelComplete?.Invoke();
+            return;
         }
+
+        IsLevelComplete = true;
+        StreakCount++;
+        UpdateBestStreak();
+        IsPaused = false;
+        Time.timeScale = 0f;
+        OnLevelComplete?.Invoke();
     }
 
     public void Respawn()
@@ -141,3 +146,4 @@ public class GameManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 }
+

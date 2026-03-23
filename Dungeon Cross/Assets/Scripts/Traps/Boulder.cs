@@ -3,11 +3,11 @@ using UnityEngine;
 
 public class Boulder : TrapBase
 {
-    protected override List<Vector2Int> BuildTrajectoryGridPositions()
+    protected override List<Vector2> BuildTrajectoryPoints()
     {
         if (GridManager.Instance == null)
         {
-            return new List<Vector2Int> { gridPosition };
+            return new List<Vector2> { transform.position };
         }
 
         switch (pattern)
@@ -23,109 +23,107 @@ public class Boulder : TrapBase
 
     public override void MoveStep()
     {
-        if (TrajectoryGridPositions.Count <= 1)
+        if (TrajectoryPoints.Count <= 1)
         {
             return;
         }
 
         if (pattern == TrapPattern.Square)
         {
-            pathIndex = (pathIndex + 1) % TrajectoryGridPositions.Count;
+            pathIndex = (pathIndex + 1) % TrajectoryPoints.Count;
         }
         else
         {
             int nextIndex = pathIndex + pathDirection;
-
-            if (nextIndex < 0 || nextIndex >= TrajectoryGridPositions.Count)
+            if (nextIndex < 0 || nextIndex >= TrajectoryPoints.Count)
             {
                 pathDirection *= -1;
+                direction *= -1;
                 nextIndex = pathIndex + pathDirection;
             }
 
-            pathIndex = nextIndex;
+            pathIndex = Mathf.Clamp(nextIndex, 0, TrajectoryPoints.Count - 1);
         }
 
-        gridPosition = TrajectoryGridPositions[pathIndex];
+        transform.position = TrajectoryPoints[pathIndex];
 
-        if (GridManager.Instance != null && !GridManager.Instance.IsWithinBounds(gridPosition))
+        if (GridManager.Instance != null)
         {
-            gridPosition = GridManager.Instance.ClampToBounds(gridPosition);
-            pathDirection *= -1;
-            direction *= -1;
+            transform.position = GridManager.Instance.ClampWorldPosition(transform.position, 0.1f);
         }
-
-        UpdateWorldPosition();
     }
 
     public override void Activate(PlayerController player)
     {
-        if (GameManager.Instance != null)
+        if (GameManager.Instance == null || player == null || !player.CanTakeDamage())
         {
-            PlayHitFlash(player);
-            GameManager.Instance.TakeDamage();
+            return;
         }
+
+        PlayHitFlash(player);
+        player.NotifyDamaged();
+        GameManager.Instance.TakeDamage();
     }
 
-    private List<Vector2Int> BuildHorizontalPath()
+    protected override void BuildTokenVisual(Transform parent)
     {
-        List<Vector2Int> path = new List<Vector2Int>();
-        int row = Mathf.Clamp(gridPosition.y, 0, GridManager.Instance.Rows - 1);
+        CreateTokenLayer(parent, "Shadow", new Vector3(0.64f, 0.26f, 1f), new Color(0f, 0f, 0f, 0.22f), 2, new Vector3(0f, -0.28f, 0f));
+        CreateTokenLayer(parent, "Body", new Vector3(0.56f, 0.52f, 1f), new Color(0.46f, 0.08f, 0.1f, 1f), 3, Vector3.zero);
+        CreateTokenLayer(parent, "Shell", new Vector3(0.42f, 0.36f, 1f), new Color(0.74f, 0.16f, 0.16f, 1f), 4, new Vector3(0f, 0.06f, 0f));
+        CreateTokenLayer(parent, "HornLeft", new Vector3(0.12f, 0.2f, 1f), new Color(0.9f, 0.84f, 0.72f, 1f), 5, new Vector3(-0.22f, 0.23f, 0f), 28f);
+        CreateTokenLayer(parent, "HornRight", new Vector3(0.12f, 0.2f, 1f), new Color(0.9f, 0.84f, 0.72f, 1f), 5, new Vector3(0.22f, 0.23f, 0f), -28f);
+        CreateTokenLayer(parent, "EyeLeft", new Vector3(0.06f, 0.06f, 1f), new Color(1f, 0.78f, 0.3f, 1f), 6, new Vector3(-0.12f, 0.08f, 0f));
+        CreateTokenLayer(parent, "EyeRight", new Vector3(0.06f, 0.06f, 1f), new Color(1f, 0.78f, 0.3f, 1f), 6, new Vector3(0.12f, 0.08f, 0f));
+    }
 
-        for (int column = 0; column < GridManager.Instance.Columns; column++)
+    protected override Color GetPrimaryDangerColor()
+    {
+        return new Color(0.96f, 0.24f, 0.24f);
+    }
+
+    private List<Vector2> BuildHorizontalPath()
+    {
+        List<Vector2> path = new List<Vector2>();
+        int row = Mathf.Clamp(startGridPosition.y, 1, GridManager.Instance.Rows - 2);
+
+        for (int column = 1; column < GridManager.Instance.Columns - 1; column++)
         {
-            path.Add(new Vector2Int(column, row));
+            path.Add(GridManager.Instance.GetWorldPosition(column, row));
         }
 
         return path;
     }
 
-    private List<Vector2Int> BuildVerticalPath()
+    private List<Vector2> BuildVerticalPath()
     {
-        List<Vector2Int> path = new List<Vector2Int>();
-        int column = Mathf.Clamp(gridPosition.x, 0, GridManager.Instance.Columns - 1);
-        int startRow = Mathf.Clamp(gridPosition.y, 0, GridManager.Instance.Rows - 1);
-        int endRow = direction >= 0
-            ? Mathf.Min(startRow + 3, GridManager.Instance.Rows - 1)
-            : Mathf.Max(startRow - 3, 0);
+        List<Vector2> path = new List<Vector2>();
+        int column = Mathf.Clamp(startGridPosition.x, 1, GridManager.Instance.Columns - 2);
+        int startRow = Mathf.Clamp(startGridPosition.y, 1, GridManager.Instance.Rows - 2);
+        int minRow = Mathf.Max(1, startRow - 2);
+        int maxRow = Mathf.Min(GridManager.Instance.Rows - 2, startRow + 2);
 
-        if (direction >= 0)
+        for (int row = minRow; row <= maxRow; row++)
         {
-            for (int row = startRow; row <= endRow; row++)
-            {
-                path.Add(new Vector2Int(column, row));
-            }
-        }
-        else
-        {
-            for (int row = endRow; row <= startRow; row++)
-            {
-                path.Add(new Vector2Int(column, row));
-            }
-        }
-
-        if (path.Count == 1)
-        {
-            int alternateRow = startRow > 0 ? startRow - 1 : Mathf.Min(startRow + 1, GridManager.Instance.Rows - 1);
-            path.Add(new Vector2Int(column, alternateRow));
+            path.Add(GridManager.Instance.GetWorldPosition(column, row));
         }
 
         return path;
     }
 
-    private List<Vector2Int> BuildSquarePath()
+    private List<Vector2> BuildSquarePath()
     {
-        List<Vector2Int> path = new List<Vector2Int>();
-        int anchorX = Mathf.Clamp(gridPosition.x, 0, Mathf.Max(0, GridManager.Instance.Columns - 3));
-        int anchorY = Mathf.Clamp(gridPosition.y, 2, GridManager.Instance.Rows - 1);
+        List<Vector2> path = new List<Vector2>();
+        int anchorX = Mathf.Clamp(startGridPosition.x, 1, GridManager.Instance.Columns - 3);
+        int anchorY = Mathf.Clamp(startGridPosition.y, 3, GridManager.Instance.Rows - 2);
 
-        path.Add(new Vector2Int(anchorX, anchorY));
-        path.Add(new Vector2Int(anchorX + 1, anchorY));
-        path.Add(new Vector2Int(anchorX + 2, anchorY));
-        path.Add(new Vector2Int(anchorX + 2, anchorY - 1));
-        path.Add(new Vector2Int(anchorX + 2, anchorY - 2));
-        path.Add(new Vector2Int(anchorX + 1, anchorY - 2));
-        path.Add(new Vector2Int(anchorX, anchorY - 2));
-        path.Add(new Vector2Int(anchorX, anchorY - 1));
+        path.Add(GridManager.Instance.GetWorldPosition(anchorX, anchorY));
+        path.Add(GridManager.Instance.GetWorldPosition(anchorX + 1, anchorY));
+        path.Add(GridManager.Instance.GetWorldPosition(anchorX + 2, anchorY));
+        path.Add(GridManager.Instance.GetWorldPosition(anchorX + 2, anchorY - 1));
+        path.Add(GridManager.Instance.GetWorldPosition(anchorX + 2, anchorY - 2));
+        path.Add(GridManager.Instance.GetWorldPosition(anchorX + 1, anchorY - 2));
+        path.Add(GridManager.Instance.GetWorldPosition(anchorX, anchorY - 2));
+        path.Add(GridManager.Instance.GetWorldPosition(anchorX, anchorY - 1));
 
         return path;
     }

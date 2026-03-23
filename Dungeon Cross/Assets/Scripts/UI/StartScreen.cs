@@ -109,12 +109,8 @@ public class StartScreen : MonoBehaviour
         hasStarted = true;
         PlayerController.GameStarted = true;
 
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.SetLevel(0);
-            GameManager.Instance.Respawn();
-        }
-
+        GameManager.Instance?.ResetGame();
+        PlayerController.Instance?.RespawnToStart();
         LevelManager.Instance?.SpawnLevel(1);
         Destroy(gameObject);
     }

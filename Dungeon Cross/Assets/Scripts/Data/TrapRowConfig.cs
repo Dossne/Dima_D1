@@ -6,6 +6,7 @@ public enum TrapType
     Arrow
 }
 
+[System.Obsolete("Use RoomHazardConfig instead.")]
 [System.Serializable]
 public class TrapRowConfig
 {

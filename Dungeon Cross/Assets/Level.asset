@@ -12,4 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2348d2c2321d74468ed05473b39ed99, type: 3}
   m_Name: Level
   m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
-  traps: []
+  traps:
+  - rowIndex: 1
+    trapType: 0
+    speed: 1.22
+    direction: 0
+    pattern: 1
+  - rowIndex: 1
+    trapType: 1
+    speed: 1.91
+    direction: 0
+    pattern: 0

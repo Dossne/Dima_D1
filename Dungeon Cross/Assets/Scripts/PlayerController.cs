@@ -5,15 +5,19 @@ public class PlayerController : MonoBehaviour
     public static bool GameStarted = false;
     public static PlayerController Instance { get; private set; }
 
-    [SerializeField] private Vector2Int startGridPosition = new Vector2Int(4, 0);
-    [SerializeField] private float swipeThreshold = 50f;
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float touchDeadZone = 20f;
+    [SerializeField] private float playerRadius = 0.25f;
 
-    public Vector2Int gridPosition => currentGridPosition;
-    public Vector2Int CurrentGridPosition => currentGridPosition;
+    public Vector2 CurrentWorldPosition => (Vector2)transform.position;
+    public Vector2 MoveInput { get; private set; }
+    public float PlayerRadius => playerRadius;
+    public Vector2Int gridPosition => GridManager.Instance != null ? GridManager.Instance.WorldToGrid(transform.position) : Vector2Int.zero;
+    public Vector2Int CurrentGridPosition => gridPosition;
 
-    private Vector2Int currentGridPosition;
-    private Vector2 swipeStartPosition;
-    private bool swipeInProgress;
+    private Vector2 touchStartPosition;
+    private bool touchHeld;
+    private float damageInvulnerabilityTimer;
 
     private void Awake()
     {
@@ -28,149 +32,43 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
-        if (GridManager.Instance == null)
-        {
-            Debug.LogError("PlayerController requires a GridManager in the scene.");
-            enabled = false;
-            return;
-        }
-
-        currentGridPosition = GridManager.Instance.ClampToBounds(startGridPosition);
-        transform.position = GridManager.Instance.GridToWorld(currentGridPosition);
+        RespawnToStart();
     }
 
     private void Update()
     {
-        ReadKeyboardInput();
-        ReadTouchInput();
-        ReadMouseInput();
-    }
-
-    private void ReadKeyboardInput()
-    {
-        if (!GameStarted) return;
-        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete || GameManager.Instance.IsPaused)) return;
-
-        if (Input.GetKeyDown(KeyCode.UpArrow))
+        if (damageInvulnerabilityTimer > 0f)
         {
-            Move(Vector2Int.up);
+            damageInvulnerabilityTimer -= Time.unscaledDeltaTime;
+        }
+
+        if (!GameStarted)
+        {
+            MoveInput = Vector2.zero;
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.DownArrow))
+        ReadMovementInput();
+
+        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete || GameManager.Instance.IsPaused))
         {
-            Move(Vector2Int.down);
+            MoveInput = Vector2.zero;
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            Move(Vector2Int.left);
-            return;
-        }
-
-        if (Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            Move(Vector2Int.right);
-        }
-    }
-
-    private void ReadTouchInput()
-    {
-        if (Input.touchCount == 0)
-        {
-            return;
-        }
-
-        Touch touch = Input.GetTouch(0);
-
-        if (touch.phase == TouchPhase.Began)
-        {
-            swipeStartPosition = touch.position;
-            swipeInProgress = true;
-            return;
-        }
-
-        if (!swipeInProgress)
-        {
-            return;
-        }
-
-        if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-        {
-            TryMoveFromSwipe(touch.position - swipeStartPosition);
-            swipeInProgress = false;
-        }
-    }
-
-    private void ReadMouseInput()
-    {
-        if (Input.touchCount > 0)
-        {
-            return;
-        }
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            swipeStartPosition = Input.mousePosition;
-            swipeInProgress = true;
-            return;
-        }
-
-        if (!swipeInProgress)
-        {
-            return;
-        }
-
-        if (Input.GetMouseButtonUp(0))
-        {
-            TryMoveFromSwipe((Vector2)Input.mousePosition - swipeStartPosition);
-            swipeInProgress = false;
-        }
-    }
-
-    private void TryMoveFromSwipe(Vector2 swipeDelta)
-    {
-        if (!GameStarted) return;
-        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete || GameManager.Instance.IsPaused)) return;
-
-        if (swipeDelta.magnitude < swipeThreshold)
-        {
-            return;
-        }
-
-        Vector2Int moveDirection;
-
-        if (Mathf.Abs(swipeDelta.x) > Mathf.Abs(swipeDelta.y))
-        {
-            moveDirection = swipeDelta.x > 0f ? Vector2Int.right : Vector2Int.left;
-        }
-        else
-        {
-            moveDirection = swipeDelta.y > 0f ? Vector2Int.up : Vector2Int.down;
-        }
-
-        Move(moveDirection);
-    }
-
-    private void Move(Vector2Int direction)
-    {
-        if (!GameStarted) return;
-        if (GameManager.Instance != null && (GameManager.Instance.IsLevelComplete || GameManager.Instance.IsPaused)) return;
-
-        Debug.Log($"[MOVE START] Player pos: {currentGridPosition} | HP: {(GameManager.Instance != null ? GameManager.Instance.CurrentHp : -1)}");
-
-        Vector2Int targetGridPosition = currentGridPosition + direction;
-
-        if (!GridManager.Instance.IsWithinBounds(targetGridPosition))
-        {
-            return;
-        }
-
-        currentGridPosition = targetGridPosition;
-        transform.position = GridManager.Instance.GridToWorld(currentGridPosition);
+        MovePlayer();
         TrapManager.Instance?.CheckPlayerPosition();
-        GameManager.Instance?.CheckWin(currentGridPosition);
+        GameManager.Instance?.CheckWin(transform.position);
+    }
+
+    public bool CanTakeDamage()
+    {
+        return damageInvulnerabilityTimer <= 0f;
+    }
+
+    public void NotifyDamaged(float invulnerabilityDuration = 0.45f)
+    {
+        damageInvulnerabilityTimer = Mathf.Max(damageInvulnerabilityTimer, invulnerabilityDuration);
     }
 
     public void RespawnToStart()
@@ -180,7 +78,111 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        currentGridPosition = GridManager.Instance.ClampToBounds(startGridPosition);
-        transform.position = GridManager.Instance.GridToWorld(currentGridPosition);
+        transform.position = GridManager.Instance.GetEntryWorldPosition();
+        MoveInput = Vector2.zero;
+        touchHeld = false;
+    }
+
+    private void ReadMovementInput()
+    {
+        Vector2 keyboardInput = new Vector2(
+            Input.GetAxisRaw("Horizontal"),
+            Input.GetAxisRaw("Vertical"));
+
+        Vector2 pointerInput = ReadPointerInput();
+        Vector2 desiredInput = pointerInput.sqrMagnitude > 0.001f ? pointerInput : keyboardInput;
+        MoveInput = desiredInput.sqrMagnitude > 1f ? desiredInput.normalized : desiredInput;
+    }
+
+    private Vector2 ReadPointerInput()
+    {
+        if (Input.touchCount > 0)
+        {
+            Touch touch = Input.GetTouch(0);
+
+            if (touch.phase == TouchPhase.Began)
+            {
+                touchStartPosition = touch.position;
+                touchHeld = true;
+            }
+            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            {
+                touchHeld = false;
+                return Vector2.zero;
+            }
+
+            if (touchHeld)
+            {
+                Vector2 delta = touch.position - touchStartPosition;
+                if (delta.magnitude < touchDeadZone)
+                {
+                    return Vector2.zero;
+                }
+
+                return delta.normalized;
+            }
+        }
+        else
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                touchStartPosition = Input.mousePosition;
+                touchHeld = true;
+            }
+            else if (Input.GetMouseButtonUp(0))
+            {
+                touchHeld = false;
+                return Vector2.zero;
+            }
+
+            if (touchHeld && Input.GetMouseButton(0))
+            {
+                Vector2 delta = (Vector2)Input.mousePosition - touchStartPosition;
+                if (delta.magnitude < touchDeadZone)
+                {
+                    return Vector2.zero;
+                }
+
+                return delta.normalized;
+            }
+        }
+
+        return Vector2.zero;
+    }
+
+    private void MovePlayer()
+    {
+        if (MoveInput.sqrMagnitude <= 0.0001f || GridManager.Instance == null)
+        {
+            return;
+        }
+
+        Vector2 currentPosition = transform.position;
+        Vector2 frameDelta = MoveInput * moveSpeed * Time.deltaTime;
+        Vector2 targetPosition = currentPosition;
+
+        Vector2 horizontalTarget = GridManager.Instance.ClampWorldPosition(
+            new Vector2(currentPosition.x + frameDelta.x, currentPosition.y),
+            playerRadius);
+        if (!IsBlocked(horizontalTarget))
+        {
+            targetPosition.x = horizontalTarget.x;
+        }
+
+        Vector2 verticalTarget = GridManager.Instance.ClampWorldPosition(
+            new Vector2(targetPosition.x, currentPosition.y + frameDelta.y),
+            playerRadius);
+        if (!IsBlocked(verticalTarget))
+        {
+            targetPosition.y = verticalTarget.y;
+        }
+
+        transform.position = targetPosition;
+    }
+
+    private bool IsBlocked(Vector2 targetPosition)
+    {
+        return LevelManager.Instance != null && LevelManager.Instance.IsPositionBlocked(targetPosition, playerRadius);
     }
 }
+

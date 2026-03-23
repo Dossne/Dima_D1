@@ -45,7 +45,7 @@ public class TrapManager : MonoBehaviour
             return;
         }
 
-        if (trap.GridPosition == PlayerController.Instance.gridPosition)
+        if (trap.IsPlayerInDanger(PlayerController.Instance))
         {
             trap.Activate(PlayerController.Instance);
         }
@@ -61,7 +61,7 @@ public class TrapManager : MonoBehaviour
         for (int i = 0; i < activeTraps.Count; i++)
         {
             TrapBase trap = activeTraps[i];
-            if (trap != null && trap.GridPosition == PlayerController.Instance.gridPosition)
+            if (trap != null && trap.IsPlayerInDanger(PlayerController.Instance))
             {
                 trap.Activate(PlayerController.Instance);
                 break;

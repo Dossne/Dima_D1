@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2348d2c2321d74468ed05473b39ed99, type: 3}
+  m_Name: Level_05
+  m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
+  hazards:
+  - trapType: 0
+    pattern: 0
+    startColumn: 1
+    startRow: 2
+    moveInterval: 0.65
+    direction: 1
+    dangerRadius: 0.5
+    useOrbitingBlade: 1
+    orbitRadius: 0.8
+    orbitBladeRadius: 0.24
+    orbitAngularSpeed: 220
+  - trapType: 1
+    pattern: 0
+    startColumn: 7
+    startRow: 4
+    moveInterval: 0.55
+    direction: -1
+    dangerRadius: 0.4
+    useOrbitingBlade: 0
+    orbitRadius: 0.7
+    orbitBladeRadius: 0.25
+    orbitAngularSpeed: 180
+  - trapType: 0
+    pattern: 1
+    startColumn: 3
+    startRow: 6
+    moveInterval: 0.7
+    direction: 1
+    dangerRadius: 0.46
+    useOrbitingBlade: 1
+    orbitRadius: 0.75
+    orbitBladeRadius: 0.2
+    orbitAngularSpeed: 200
+  - trapType: 0
+    pattern: 2
+    startColumn: 5
+    startRow: 9
+    moveInterval: 0.5
+    direction: 1
+    dangerRadius: 0.45
+    useOrbitingBlade: 1
+    orbitRadius: 0.8
+    orbitBladeRadius: 0.26
+    orbitAngularSpeed: 240
+  - trapType: 1
+    pattern: 0
+    startColumn: 2
+    startRow: 10
+    moveInterval: 0.45
+    direction: 1
+    dangerRadius: 0.38
+    useOrbitingBlade: 0
+    orbitRadius: 0.7
+    orbitBladeRadius: 0.25
+    orbitAngularSpeed: 180
+  traps: []
