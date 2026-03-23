@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class LevelManager : MonoBehaviour
 {
+    public static LevelManager Instance { get; private set; }
+
     [SerializeField] private List<TrapRow> trapRows = new List<TrapRow>();
 
     private readonly List<TrapBase> spawnedTraps = new List<TrapBase>();
@@ -13,6 +15,17 @@ public class LevelManager : MonoBehaviour
     private static readonly FieldInfo GridPositionField = typeof(TrapBase).GetField("gridPosition", BindingFlags.Instance | BindingFlags.NonPublic);
 
     public IReadOnlyList<TrapRow> TrapRows => trapRows;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+    }
 
     public void SpawnLevel(int level)
     {

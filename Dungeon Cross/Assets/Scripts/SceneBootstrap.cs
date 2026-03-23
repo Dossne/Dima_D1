@@ -1,5 +1,6 @@
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.UI;
 
 [DefaultExecutionOrder(-100)]
 public class SceneBootstrap : MonoBehaviour
@@ -50,6 +51,7 @@ public class SceneBootstrap : MonoBehaviour
 
         ConfigurePlayer(player);
         ConfigureCamera();
+        ConfigureUI();
         levelManager.SpawnLevel(1);
     }
 
@@ -88,5 +90,45 @@ public class SceneBootstrap : MonoBehaviour
         targetCamera.orthographic = true;
         targetCamera.orthographicSize = 5f;
         targetCamera.transform.position = new Vector3(3f, 4f, -10f);
+    }
+
+    private void ConfigureUI()
+    {
+        GameUI gameUi = FindObjectOfType<GameUI>();
+        if (gameUi != null)
+        {
+            return;
+        }
+
+        Canvas existingCanvas = FindObjectOfType<Canvas>();
+        GameObject canvasObject;
+
+        if (existingCanvas == null)
+        {
+            canvasObject = new GameObject("Canvas");
+            Canvas canvas = canvasObject.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasObject.AddComponent<CanvasScaler>();
+            canvasObject.AddComponent<GraphicRaycaster>();
+        }
+        else
+        {
+            canvasObject = existingCanvas.gameObject;
+
+            if (existingCanvas.GetComponent<CanvasScaler>() == null)
+            {
+                canvasObject.AddComponent<CanvasScaler>();
+            }
+
+            if (existingCanvas.GetComponent<GraphicRaycaster>() == null)
+            {
+                canvasObject.AddComponent<GraphicRaycaster>();
+            }
+        }
+
+        if (canvasObject.GetComponent<GameUI>() == null)
+        {
+            canvasObject.AddComponent<GameUI>();
+        }
     }
 }

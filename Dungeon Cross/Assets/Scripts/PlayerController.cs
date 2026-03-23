@@ -26,8 +26,37 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        ReadKeyboardInput();
         ReadTouchInput();
         ReadMouseInput();
+    }
+
+    private void ReadKeyboardInput()
+    {
+        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete)) return;
+
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            Move(Vector2Int.up);
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            Move(Vector2Int.down);
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            Move(Vector2Int.left);
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            Move(Vector2Int.right);
+        }
     }
 
     private void ReadTouchInput()
@@ -86,6 +115,8 @@ public class PlayerController : MonoBehaviour
 
     private void TryMoveFromSwipe(Vector2 swipeDelta)
     {
+        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete)) return;
+
         if (swipeDelta.magnitude < swipeThreshold)
         {
             return;
@@ -107,6 +138,8 @@ public class PlayerController : MonoBehaviour
 
     private void Move(Vector2Int direction)
     {
+        if (GameManager.Instance != null && GameManager.Instance.IsLevelComplete) return;
+
         Debug.Log($"[MOVE START] Player pos: {currentGridPosition} | HP: {(GameManager.Instance != null ? GameManager.Instance.CurrentHp : -1)}");
 
         Vector2Int targetGridPosition = currentGridPosition + direction;
@@ -119,5 +152,17 @@ public class PlayerController : MonoBehaviour
         currentGridPosition = targetGridPosition;
         transform.position = GridManager.Instance.GridToWorld(currentGridPosition);
         TrapManager.Instance?.StepTraps();
+        GameManager.Instance?.CheckWin(currentGridPosition.y);
+    }
+
+    public void RespawnToStart()
+    {
+        if (GridManager.Instance == null)
+        {
+            return;
+        }
+
+        currentGridPosition = GridManager.Instance.ClampToBounds(startGridPosition);
+        transform.position = GridManager.Instance.GridToWorld(currentGridPosition);
     }
 }
