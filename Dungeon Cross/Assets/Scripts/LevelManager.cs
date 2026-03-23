@@ -242,6 +242,10 @@ public class LevelManager : MonoBehaviour
                 startRow = trap.rowIndex,
                 moveInterval = 0.6f / Mathf.Max(1, trap.speed),
                 direction = trap.direction,
+                minColumn = 1,
+                maxColumn = 7,
+                minRow = Mathf.Max(1, trap.rowIndex - 2),
+                maxRow = Mathf.Min(10, trap.rowIndex + 2),
                 dangerRadius = trap.trapType == TrapType.Arrow ? 0.38f : 0.45f,
                 useOrbitingBlade = false,
                 orbitRadius = 0.7f,
@@ -277,18 +281,24 @@ public class LevelManager : MonoBehaviour
                 continue;
             }
 
-            result.Add(CreateHazard(
-                hazard.trapType,
-                hazard.pattern,
-                hazard.startColumn,
-                hazard.startRow,
-                hazard.moveInterval,
-                hazard.direction,
-                hazard.dangerRadius,
-                hazard.useOrbitingBlade,
-                hazard.orbitRadius,
-                hazard.orbitBladeRadius,
-                hazard.orbitAngularSpeed));
+            result.Add(new RoomHazardConfig
+            {
+                trapType = hazard.trapType,
+                pattern = hazard.pattern,
+                startColumn = hazard.startColumn,
+                startRow = hazard.startRow,
+                minColumn = hazard.minColumn,
+                maxColumn = hazard.maxColumn,
+                minRow = hazard.minRow,
+                maxRow = hazard.maxRow,
+                moveInterval = hazard.moveInterval,
+                direction = hazard.direction,
+                dangerRadius = hazard.dangerRadius,
+                useOrbitingBlade = hazard.useOrbitingBlade,
+                orbitRadius = hazard.orbitRadius,
+                orbitBladeRadius = hazard.orbitBladeRadius,
+                orbitAngularSpeed = hazard.orbitAngularSpeed
+            });
         }
 
         return result;
@@ -308,12 +318,21 @@ public class LevelManager : MonoBehaviour
 
     private static RoomHazardConfig CreateHazard(TrapType type, TrapPattern pattern, int startColumn, int startRow, float moveInterval, int direction, float dangerRadius, bool useOrbitingBlade, float orbitRadius = 0.7f, float orbitBladeRadius = 0.25f, float orbitAngularSpeed = 180f)
     {
+        int horizontalMin = 1;
+        int horizontalMax = 7;
+        int verticalMin = Mathf.Max(1, startRow - 2);
+        int verticalMax = Mathf.Min(10, startRow + 2);
+
         return new RoomHazardConfig
         {
             trapType = type,
             pattern = pattern,
             startColumn = startColumn,
             startRow = startRow,
+            minColumn = horizontalMin,
+            maxColumn = horizontalMax,
+            minRow = verticalMin,
+            maxRow = verticalMax,
             moveInterval = moveInterval,
             direction = direction,
             dangerRadius = dangerRadius,
@@ -344,3 +363,5 @@ public class LevelManager : MonoBehaviour
         return string.CompareOrdinal(left.name, right.name);
     }
 }
+
+

@@ -7,6 +7,10 @@ public class RoomHazardConfig
     public TrapPattern pattern = TrapPattern.Horizontal;
     [Range(0, 8)] public int startColumn = 4;
     [Range(1, 10)] public int startRow = 5;
+    [Range(1, 7)] public int minColumn = 1;
+    [Range(1, 7)] public int maxColumn = 7;
+    [Range(1, 10)] public int minRow = 3;
+    [Range(1, 10)] public int maxRow = 7;
     [Range(0.2f, 2f)] public float moveInterval = 0.8f;
     public int direction = 1;
     [Range(0.2f, 1.25f)] public float dangerRadius = 0.45f;

@@ -46,4 +46,5 @@ MonoBehaviour:
     orbitRadius: 0.7
     orbitBladeRadius: 0.25
     orbitAngularSpeed: 180
+  wallCells: []
   traps: []

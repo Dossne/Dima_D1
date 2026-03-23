@@ -85,8 +85,9 @@ public class Boulder : TrapBase
     {
         List<Vector2> path = new List<Vector2>();
         int row = Mathf.Clamp(startGridPosition.y, 1, GridManager.Instance.Rows - 2);
+        GetHorizontalBounds(out int clampedMin, out int clampedMax);
 
-        for (int column = 1; column < GridManager.Instance.Columns - 1; column++)
+        for (int column = clampedMin; column <= clampedMax; column++)
         {
             path.Add(GridManager.Instance.GetWorldPosition(column, row));
         }
@@ -98,11 +99,9 @@ public class Boulder : TrapBase
     {
         List<Vector2> path = new List<Vector2>();
         int column = Mathf.Clamp(startGridPosition.x, 1, GridManager.Instance.Columns - 2);
-        int startRow = Mathf.Clamp(startGridPosition.y, 1, GridManager.Instance.Rows - 2);
-        int minRow = Mathf.Max(1, startRow - 2);
-        int maxRow = Mathf.Min(GridManager.Instance.Rows - 2, startRow + 2);
+        GetVerticalBounds(out int clampedMin, out int clampedMax);
 
-        for (int row = minRow; row <= maxRow; row++)
+        for (int row = clampedMin; row <= clampedMax; row++)
         {
             path.Add(GridManager.Instance.GetWorldPosition(column, row));
         }

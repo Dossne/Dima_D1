@@ -8,6 +8,10 @@ public abstract class TrapBase : MonoBehaviour
     [SerializeField] protected int direction = 1;
     [SerializeField] protected Vector2Int startGridPosition;
     [SerializeField] protected TrapPattern pattern = TrapPattern.Horizontal;
+    [SerializeField] protected int minColumn = 1;
+    [SerializeField] protected int maxColumn = 7;
+    [SerializeField] protected int minRow = 3;
+    [SerializeField] protected int maxRow = 7;
     [SerializeField] protected float dangerRadius = 0.45f;
     [SerializeField] protected bool useOrbitingBlade;
     [SerializeField] protected float orbitRadius = 0.7f;
@@ -83,6 +87,11 @@ public abstract class TrapBase : MonoBehaviour
         pattern = config.pattern;
         startGridPosition = new Vector2Int(config.startColumn, config.startRow);
         moveInterval = Mathf.Max(0.05f, config.moveInterval);
+        minColumn = config.minColumn;
+        maxColumn = config.maxColumn;
+        minRow = config.minRow;
+        maxRow = config.maxRow;
+        EnsureLinearBounds();
         dangerRadius = Mathf.Max(0.1f, config.dangerRadius);
         useOrbitingBlade = config.useOrbitingBlade;
         orbitRadius = Mathf.Max(0.1f, config.orbitRadius);
@@ -166,6 +175,68 @@ public abstract class TrapBase : MonoBehaviour
         renderer.sortingOrder = sortingOrder;
     }
 
+
+    protected void GetHorizontalBounds(out int clampedMin, out int clampedMax)
+    {
+        if (GridManager.Instance == null)
+        {
+            clampedMin = minColumn;
+            clampedMax = maxColumn;
+            return;
+        }
+
+        clampedMin = Mathf.Clamp(minColumn, 1, GridManager.Instance.Columns - 2);
+        clampedMax = Mathf.Clamp(maxColumn, 1, GridManager.Instance.Columns - 2);
+        if (clampedMin > clampedMax)
+        {
+            int swap = clampedMin;
+            clampedMin = clampedMax;
+            clampedMax = swap;
+        }
+    }
+
+    protected void GetVerticalBounds(out int clampedMin, out int clampedMax)
+    {
+        if (GridManager.Instance == null)
+        {
+            clampedMin = minRow;
+            clampedMax = maxRow;
+            return;
+        }
+
+        clampedMin = Mathf.Clamp(minRow, 1, GridManager.Instance.Rows - 2);
+        clampedMax = Mathf.Clamp(maxRow, 1, GridManager.Instance.Rows - 2);
+        if (clampedMin > clampedMax)
+        {
+            int swap = clampedMin;
+            clampedMin = clampedMax;
+            clampedMax = swap;
+        }
+    }
+
+    private void EnsureLinearBounds()
+    {
+        int maxPlayableColumn = GridManager.Instance != null ? GridManager.Instance.Columns - 2 : 7;
+        int maxPlayableRow = GridManager.Instance != null ? GridManager.Instance.Rows - 2 : 10;
+
+        if (minColumn == 0 && maxColumn == 0)
+        {
+            minColumn = 1;
+            maxColumn = maxPlayableColumn;
+        }
+
+        if (minRow == 0 && maxRow == 0)
+        {
+            int clampedStartRow = Mathf.Clamp(startGridPosition.y, 1, maxPlayableRow);
+            minRow = Mathf.Max(1, clampedStartRow - 2);
+            maxRow = Mathf.Min(maxPlayableRow, clampedStartRow + 2);
+        }
+
+        minColumn = Mathf.Clamp(minColumn, 1, maxPlayableColumn);
+        maxColumn = Mathf.Clamp(maxColumn, 1, maxPlayableColumn);
+        minRow = Mathf.Clamp(minRow, 1, maxPlayableRow);
+        maxRow = Mathf.Clamp(maxRow, 1, maxPlayableRow);
+    }
     private void UpdateWorldPosition()
     {
         if (trajectoryPoints.Count == 0)
@@ -294,10 +365,34 @@ public abstract class TrapBase : MonoBehaviour
             trajectoryPoints.Add(GridManager.Instance.GetWorldPosition(startGridPosition.x, startGridPosition.y));
         }
 
-        pathIndex = 0;
+        pathIndex = FindClosestTrajectoryIndex();
         pathDirection = direction >= 0 ? 1 : -1;
     }
 
+
+    private int FindClosestTrajectoryIndex()
+    {
+        if (trajectoryPoints.Count == 0 || GridManager.Instance == null)
+        {
+            return 0;
+        }
+
+        Vector2 target = GridManager.Instance.GetWorldPosition(startGridPosition.x, startGridPosition.y);
+        int closestIndex = 0;
+        float closestDistance = float.MaxValue;
+
+        for (int i = 0; i < trajectoryPoints.Count; i++)
+        {
+            float distance = Vector2.SqrMagnitude(trajectoryPoints[i] - target);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestIndex = i;
+            }
+        }
+
+        return closestIndex;
+    }
     protected virtual void DrawTrajectory()
     {
         if (trajectoryPoints.Count == 0)
@@ -366,3 +461,5 @@ public abstract class TrapBase : MonoBehaviour
         }
     }
 }
+
+
