@@ -5,6 +5,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Vector2Int startGridPosition = new Vector2Int(3, 0);
     [SerializeField] private float swipeThreshold = 50f;
 
+    public Vector2Int CurrentGridPosition => currentGridPosition;
+
     private Vector2Int currentGridPosition;
     private Vector2 swipeStartPosition;
     private bool swipeInProgress;
@@ -105,6 +107,8 @@ public class PlayerController : MonoBehaviour
 
     private void Move(Vector2Int direction)
     {
+        Debug.Log($"[MOVE START] Player pos: {currentGridPosition} | HP: {(GameManager.Instance != null ? GameManager.Instance.CurrentHp : -1)}");
+
         Vector2Int targetGridPosition = currentGridPosition + direction;
 
         if (!GridManager.Instance.IsWithinBounds(targetGridPosition))
@@ -114,5 +118,6 @@ public class PlayerController : MonoBehaviour
 
         currentGridPosition = targetGridPosition;
         transform.position = GridManager.Instance.GridToWorld(currentGridPosition);
+        TrapManager.Instance?.StepTraps();
     }
 }
