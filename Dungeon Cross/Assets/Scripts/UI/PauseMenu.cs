@@ -9,6 +9,8 @@ public class PauseMenu : MonoBehaviour
     private Text soundText;
     private Text bestText;
     private bool soundEnabled;
+    private RectTransform safeAreaRect;
+    private Rect lastSafeArea;
 
     private RectTransform resumeButtonRect;
     private RectTransform restartButtonRect;
@@ -48,11 +50,14 @@ public class PauseMenu : MonoBehaviour
 
         soundEnabled = PlayerPrefs.GetInt("SoundEnabled", 1) == 1;
         BuildUi();
+        RefreshSafeArea();
         MusicManager.Instance?.RefreshFromPrefs();
     }
 
     private void Update()
     {
+        RefreshSafeArea();
+
         if (!IsVisible)
         {
             return;
@@ -102,27 +107,44 @@ public class PauseMenu : MonoBehaviour
         overlayRect.offsetMin = Vector2.zero;
         overlayRect.offsetMax = Vector2.zero;
 
-        Text titleText = CreateText("PauseTitle", font, 72, FontStyle.Bold, Color.white);
+        safeAreaRect = CreateSafeAreaRoot();
+
+        Text titleText = CreateText("PauseTitle", font, 78, FontStyle.Bold, Color.white);
+        titleText.transform.SetParent(safeAreaRect, false);
         RectTransform titleRect = titleText.rectTransform;
         titleRect.anchorMin = new Vector2(0.5f, 1f);
         titleRect.anchorMax = new Vector2(0.5f, 1f);
-        titleRect.anchoredPosition = new Vector2(0f, -200f);
-        titleRect.sizeDelta = new Vector2(800f, 120f);
+        titleRect.anchoredPosition = new Vector2(0f, -140f);
+        titleRect.sizeDelta = new Vector2(880f, 130f);
         titleText.text = "PAUSED";
 
-        float startY = -520f;
+        float startY = -430f;
         CreateButton(font, "ResumeButton", "RESUME", new Vector2(0f, startY), out resumeButtonRect);
-        CreateButton(font, "RestartButton", "RESTART", new Vector2(0f, startY - 124f), out restartButtonRect);
-        CreateButton(font, "SoundButton", soundEnabled ? "SOUND: ON" : "SOUND: OFF", new Vector2(0f, startY - 248f), out soundButtonRect, out soundText);
+        CreateButton(font, "RestartButton", "RESTART", new Vector2(0f, startY - 136f), out restartButtonRect);
+        CreateButton(font, "SoundButton", soundEnabled ? "SOUND: ON" : "SOUND: OFF", new Vector2(0f, startY - 272f), out soundButtonRect, out soundText);
 
-        bestText = CreateText("BestText", font, 42, FontStyle.Normal, new Color(1f, 215f / 255f, 0f, 1f));
+        bestText = CreateText("BestText", font, 44, FontStyle.Normal, new Color(1f, 215f / 255f, 0f, 1f));
+        bestText.transform.SetParent(safeAreaRect, false);
         RectTransform bestRect = bestText.rectTransform;
         bestRect.anchorMin = new Vector2(0.5f, 0.5f);
         bestRect.anchorMax = new Vector2(0.5f, 0.5f);
-        bestRect.anchoredPosition = new Vector2(0f, startY - 390f);
-        bestRect.sizeDelta = new Vector2(800f, 80f);
+        bestRect.anchoredPosition = new Vector2(0f, startY - 430f);
+        bestRect.sizeDelta = new Vector2(860f, 84f);
 
         RefreshTexts();
+    }
+
+    private RectTransform CreateSafeAreaRoot()
+    {
+        GameObject safeAreaObject = new GameObject("SafeAreaRoot");
+        safeAreaObject.transform.SetParent(transform, false);
+
+        RectTransform rectTransform = safeAreaObject.AddComponent<RectTransform>();
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+        return rectTransform;
     }
 
     private void CreateButton(Font font, string objectName, string label, Vector2 anchoredPosition, out RectTransform buttonRect)
@@ -133,13 +155,13 @@ public class PauseMenu : MonoBehaviour
     private void CreateButton(Font font, string objectName, string label, Vector2 anchoredPosition, out RectTransform buttonRect, out Text labelText)
     {
         GameObject buttonObject = new GameObject(objectName);
-        buttonObject.transform.SetParent(transform, false);
+        buttonObject.transform.SetParent(safeAreaRect, false);
 
         buttonRect = buttonObject.AddComponent<RectTransform>();
         buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
         buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
         buttonRect.anchoredPosition = anchoredPosition;
-        buttonRect.sizeDelta = new Vector2(520f, 100f);
+        buttonRect.sizeDelta = new Vector2(560f, 108f);
 
         Image image = buttonObject.AddComponent<Image>();
         image.color = new Color(1f, 1f, 1f, 0f);
@@ -148,15 +170,15 @@ public class PauseMenu : MonoBehaviour
         outline.effectColor = Color.white;
         outline.effectDistance = new Vector2(3f, 3f);
 
-        labelText = CreateText($"{objectName}Text", font, 48, FontStyle.Normal, Color.white);
+        labelText = CreateText($"{objectName}Text", font, 50, FontStyle.Normal, Color.white);
         labelText.transform.SetParent(buttonObject.transform, false);
         labelText.text = label;
 
         RectTransform textRect = labelText.rectTransform;
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
+        textRect.offsetMin = new Vector2(20f, 0f);
+        textRect.offsetMax = new Vector2(-20f, 0f);
     }
 
     private Text CreateText(string objectName, Font font, int fontSize, FontStyle fontStyle, Color color)
@@ -170,7 +192,7 @@ public class PauseMenu : MonoBehaviour
         text.fontStyle = fontStyle;
         text.alignment = TextAnchor.MiddleCenter;
         text.color = color;
-        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
         text.verticalOverflow = VerticalWrapMode.Overflow;
         return text;
     }
@@ -219,5 +241,32 @@ public class PauseMenu : MonoBehaviour
             bestText.text = $"BEST: {best}";
         }
     }
-}
 
+    private void RefreshSafeArea()
+    {
+        if (safeAreaRect == null)
+        {
+            return;
+        }
+
+        Rect safeArea = Screen.safeArea;
+        if (safeArea == lastSafeArea && safeArea.width > 0f && safeArea.height > 0f)
+        {
+            return;
+        }
+
+        lastSafeArea = safeArea;
+
+        Vector2 anchorMin = safeArea.position;
+        Vector2 anchorMax = safeArea.position + safeArea.size;
+        anchorMin.x /= Screen.width;
+        anchorMin.y /= Screen.height;
+        anchorMax.x /= Screen.width;
+        anchorMax.y /= Screen.height;
+
+        safeAreaRect.anchorMin = anchorMin;
+        safeAreaRect.anchorMax = anchorMax;
+        safeAreaRect.offsetMin = Vector2.zero;
+        safeAreaRect.offsetMax = Vector2.zero;
+    }
+}

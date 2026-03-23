@@ -4,7 +4,9 @@ using UnityEngine.UI;
 public class StartScreen : MonoBehaviour
 {
     private Text tapText;
+    private RectTransform safeAreaRect;
     private bool hasStarted;
+    private Rect lastSafeArea;
 
     private void Awake()
     {
@@ -31,10 +33,12 @@ public class StartScreen : MonoBehaviour
         }
 
         CreateUi();
+        RefreshSafeArea();
     }
 
     private void Update()
     {
+        RefreshSafeArea();
         PulseTapText();
 
         if (hasStarted)
@@ -66,29 +70,47 @@ public class StartScreen : MonoBehaviour
         backgroundRect.offsetMax = Vector2.zero;
         background.color = new Color(0f, 0f, 0f, 0.85f);
 
-        Text titleText = CreateText("TitleText", font, 56, TextAnchor.MiddleCenter, Color.white);
+        safeAreaRect = CreateSafeAreaRoot();
+
+        Text titleText = CreateText("TitleText", font, 64, TextAnchor.MiddleCenter, Color.white);
+        titleText.transform.SetParent(safeAreaRect, false);
         RectTransform titleRect = titleText.rectTransform;
         titleRect.anchorMin = new Vector2(0.5f, 0.5f);
         titleRect.anchorMax = new Vector2(0.5f, 0.5f);
-        titleRect.anchoredPosition = new Vector2(0f, 110f);
-        titleRect.sizeDelta = new Vector2(900f, 120f);
+        titleRect.anchoredPosition = new Vector2(0f, 170f);
+        titleRect.sizeDelta = new Vector2(900f, 140f);
         titleText.text = "DUNGEON CROSS";
 
-        Text flavorText = CreateText("FlavorText", font, 24, TextAnchor.MiddleCenter, new Color(0.75f, 0.75f, 0.75f, 1f));
+        Text flavorText = CreateText("FlavorText", font, 28, TextAnchor.MiddleCenter, new Color(0.75f, 0.75f, 0.75f, 1f));
+        flavorText.transform.SetParent(safeAreaRect, false);
         RectTransform flavorRect = flavorText.rectTransform;
         flavorRect.anchorMin = new Vector2(0.5f, 0.5f);
         flavorRect.anchorMax = new Vector2(0.5f, 0.5f);
-        flavorRect.anchoredPosition = new Vector2(0f, 20f);
-        flavorRect.sizeDelta = new Vector2(900f, 120f);
+        flavorRect.anchoredPosition = new Vector2(0f, 52f);
+        flavorRect.sizeDelta = new Vector2(920f, 140f);
         flavorText.text = "A knight without a sword.\nOnly wit can carry you through.";
 
-        tapText = CreateText("TapText", font, 30, TextAnchor.MiddleCenter, Color.white);
+        tapText = CreateText("TapText", font, 36, TextAnchor.MiddleCenter, Color.white);
+        tapText.transform.SetParent(safeAreaRect, false);
         RectTransform tapRect = tapText.rectTransform;
         tapRect.anchorMin = new Vector2(0.5f, 0f);
         tapRect.anchorMax = new Vector2(0.5f, 0f);
-        tapRect.anchoredPosition = new Vector2(0f, 80f);
-        tapRect.sizeDelta = new Vector2(900f, 80f);
+        tapRect.anchoredPosition = new Vector2(0f, 120f);
+        tapRect.sizeDelta = new Vector2(920f, 90f);
         tapText.text = "TAP TO BEGIN";
+    }
+
+    private RectTransform CreateSafeAreaRoot()
+    {
+        GameObject safeAreaObject = new GameObject("SafeAreaRoot");
+        safeAreaObject.transform.SetParent(transform, false);
+
+        RectTransform rectTransform = safeAreaObject.AddComponent<RectTransform>();
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+        return rectTransform;
     }
 
     private void PulseTapText()
@@ -135,8 +157,36 @@ public class StartScreen : MonoBehaviour
         text.fontSize = fontSize;
         text.alignment = alignment;
         text.color = color;
-        text.horizontalOverflow = HorizontalWrapMode.Overflow;
+        text.horizontalOverflow = HorizontalWrapMode.Wrap;
         text.verticalOverflow = VerticalWrapMode.Overflow;
         return text;
+    }
+
+    private void RefreshSafeArea()
+    {
+        if (safeAreaRect == null)
+        {
+            return;
+        }
+
+        Rect safeArea = Screen.safeArea;
+        if (safeArea == lastSafeArea && safeArea.width > 0f && safeArea.height > 0f)
+        {
+            return;
+        }
+
+        lastSafeArea = safeArea;
+
+        Vector2 anchorMin = safeArea.position;
+        Vector2 anchorMax = safeArea.position + safeArea.size;
+        anchorMin.x /= Screen.width;
+        anchorMin.y /= Screen.height;
+        anchorMax.x /= Screen.width;
+        anchorMax.y /= Screen.height;
+
+        safeAreaRect.anchorMin = anchorMin;
+        safeAreaRect.anchorMax = anchorMax;
+        safeAreaRect.offsetMin = Vector2.zero;
+        safeAreaRect.offsetMax = Vector2.zero;
     }
 }

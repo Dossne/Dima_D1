@@ -8,10 +8,12 @@ public class GameUI : MonoBehaviour
     private Text bestText;
     private Text centerText;
     private Text actionText;
+    private RectTransform safeAreaRect;
     private RectTransform overlayPanelRect;
     private RectTransform pauseButtonRect;
     private bool waitingForRestart;
     private bool waitingForContinue;
+    private Rect lastSafeArea;
 
     private void Awake()
     {
@@ -31,6 +33,7 @@ public class GameUI : MonoBehaviour
         }
 
         CreateUiElements();
+        RefreshSafeArea();
     }
 
     private void OnEnable()
@@ -54,6 +57,7 @@ public class GameUI : MonoBehaviour
 
     private void Update()
     {
+        RefreshSafeArea();
         RefreshHp();
         RefreshStreak();
         RefreshBest();
@@ -106,34 +110,49 @@ public class GameUI : MonoBehaviour
     {
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
-        hpText = CreateText("HpText", font, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -10f), TextAnchor.UpperLeft, 32);
-        streakText = CreateText("StreakText", font, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -50f), TextAnchor.UpperLeft, 28);
-        bestText = CreateText("BestText", font, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -90f), TextAnchor.UpperLeft, 28);
+        safeAreaRect = CreateSafeAreaRoot();
+
+        hpText = CreateText("HpText", font, safeAreaRect, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -28f), TextAnchor.UpperLeft, 40, new Vector2(680f, 84f));
+        streakText = CreateText("StreakText", font, safeAreaRect, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -84f), TextAnchor.UpperLeft, 34, new Vector2(680f, 72f));
+        bestText = CreateText("BestText", font, safeAreaRect, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -136f), TextAnchor.UpperLeft, 34, new Vector2(680f, 72f));
         CreatePauseButton(font);
 
         GameObject overlayPanel = new GameObject("OverlayPanel");
-        overlayPanel.transform.SetParent(transform, false);
+        overlayPanel.transform.SetParent(safeAreaRect, false);
         overlayPanelRect = overlayPanel.AddComponent<RectTransform>();
         overlayPanelRect.anchorMin = Vector2.zero;
         overlayPanelRect.anchorMax = Vector2.one;
         overlayPanelRect.offsetMin = Vector2.zero;
         overlayPanelRect.offsetMax = Vector2.zero;
 
-        centerText = CreateOverlayText("CenterText", font, new Vector2(0f, 80f), 48);
-        actionText = CreateOverlayText("ActionText", font, new Vector2(0f, -20f), 28);
+        centerText = CreateOverlayText("CenterText", font, new Vector2(0f, 88f), 60);
+        actionText = CreateOverlayText("ActionText", font, new Vector2(0f, -28f), 34);
     }
 
-    private Text CreateText(string objectName, Font font, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, TextAnchor alignment, int fontSize)
+    private RectTransform CreateSafeAreaRoot()
+    {
+        GameObject safeAreaObject = new GameObject("SafeAreaRoot");
+        safeAreaObject.transform.SetParent(transform, false);
+
+        RectTransform rectTransform = safeAreaObject.AddComponent<RectTransform>();
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+        return rectTransform;
+    }
+
+    private Text CreateText(string objectName, Font font, RectTransform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 anchoredPosition, TextAnchor alignment, int fontSize, Vector2 sizeDelta)
     {
         GameObject textObject = new GameObject(objectName);
-        textObject.transform.SetParent(transform, false);
+        textObject.transform.SetParent(parent, false);
 
         RectTransform rectTransform = textObject.AddComponent<RectTransform>();
         rectTransform.anchorMin = anchorMin;
         rectTransform.anchorMax = anchorMax;
         rectTransform.pivot = anchorMin == anchorMax ? anchorMin : new Vector2(0.5f, 0.5f);
         rectTransform.anchoredPosition = anchoredPosition;
-        rectTransform.sizeDelta = new Vector2(600f, 120f);
+        rectTransform.sizeDelta = sizeDelta;
 
         Text text = textObject.AddComponent<Text>();
         text.font = font;
@@ -153,8 +172,8 @@ public class GameUI : MonoBehaviour
         RectTransform rectTransform = textObject.AddComponent<RectTransform>();
         rectTransform.anchorMin = Vector2.zero;
         rectTransform.anchorMax = Vector2.one;
-        rectTransform.offsetMin = new Vector2(40f, 0f);
-        rectTransform.offsetMax = new Vector2(-40f, 0f);
+        rectTransform.offsetMin = new Vector2(72f, 0f);
+        rectTransform.offsetMax = new Vector2(-72f, 0f);
         rectTransform.anchoredPosition = anchoredPosition;
 
         Text text = textObject.AddComponent<Text>();
@@ -224,15 +243,15 @@ public class GameUI : MonoBehaviour
         {
             if (mainMessage == "LEVEL COMPLETE!")
             {
-                centerText.fontSize = 60;
+                centerText.fontSize = 66;
             }
             else if (mainMessage == "GAME OVER")
             {
-                centerText.fontSize = 70;
+                centerText.fontSize = 72;
             }
             else
             {
-                centerText.fontSize = 48;
+                centerText.fontSize = 60;
             }
 
             centerText.text = mainMessage;
@@ -273,14 +292,14 @@ public class GameUI : MonoBehaviour
     private void CreatePauseButton(Font font)
     {
         GameObject buttonObject = new GameObject("PauseButton");
-        buttonObject.transform.SetParent(transform, false);
+        buttonObject.transform.SetParent(safeAreaRect, false);
 
         pauseButtonRect = buttonObject.AddComponent<RectTransform>();
         pauseButtonRect.anchorMin = new Vector2(1f, 1f);
         pauseButtonRect.anchorMax = new Vector2(1f, 1f);
         pauseButtonRect.pivot = new Vector2(1f, 1f);
-        pauseButtonRect.anchoredPosition = new Vector2(-20f, -20f);
-        pauseButtonRect.sizeDelta = new Vector2(80f, 80f);
+        pauseButtonRect.anchoredPosition = new Vector2(-28f, -28f);
+        pauseButtonRect.sizeDelta = new Vector2(96f, 96f);
 
         Image image = buttonObject.AddComponent<Image>();
         image.color = new Color(1f, 1f, 1f, 0f);
@@ -300,10 +319,38 @@ public class GameUI : MonoBehaviour
 
         Text text = textObject.AddComponent<Text>();
         text.font = font;
-        text.fontSize = 36;
+        text.fontSize = 40;
         text.alignment = TextAnchor.MiddleCenter;
         text.color = Color.white;
         text.text = "II";
+    }
+
+    private void RefreshSafeArea()
+    {
+        if (safeAreaRect == null)
+        {
+            return;
+        }
+
+        Rect safeArea = Screen.safeArea;
+        if (safeArea == lastSafeArea && safeArea.width > 0f && safeArea.height > 0f)
+        {
+            return;
+        }
+
+        lastSafeArea = safeArea;
+
+        Vector2 anchorMin = safeArea.position;
+        Vector2 anchorMax = safeArea.position + safeArea.size;
+        anchorMin.x /= Screen.width;
+        anchorMin.y /= Screen.height;
+        anchorMax.x /= Screen.width;
+        anchorMax.y /= Screen.height;
+
+        safeAreaRect.anchorMin = anchorMin;
+        safeAreaRect.anchorMax = anchorMax;
+        safeAreaRect.offsetMin = Vector2.zero;
+        safeAreaRect.offsetMax = Vector2.zero;
     }
 
     private bool HandlePauseButtonTap(Vector2 screenPosition)
