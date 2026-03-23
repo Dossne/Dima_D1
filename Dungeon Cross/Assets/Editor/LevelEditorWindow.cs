@@ -21,6 +21,7 @@ public class LevelEditorWindow : EditorWindow
     private const int Rows = 12;
     private const float CellSize = 30f;
     private const string LevelsFolder = "Assets/Resources/Levels";
+    private const float ValidationPanelHeight = 132f;
 
     private LevelConfig[] levelConfigs = new LevelConfig[0];
     private LevelConfig selectedConfig;
@@ -29,11 +30,13 @@ public class LevelEditorWindow : EditorWindow
     private SerializedProperty wallCellsProperty;
     private Vector2 levelListScroll;
     private Vector2 inspectorScroll;
+    private Vector2 validationScroll;
 
     private EditorLayer activeLayer = EditorLayer.Walls;
     private int selectedHazardIndex = -1;
     private int paintedWallValue = -1;
     private LinearHandleType activeLinearHandle = LinearHandleType.None;
+    private bool showHazardBrush;
 
     private TrapType brushTrapType = TrapType.Boulder;
     private TrapPattern brushPattern = TrapPattern.Horizontal;
@@ -201,6 +204,8 @@ public class LevelEditorWindow : EditorWindow
                 DrawLayerToolbar();
                 DrawHazardBrush();
                 DrawGridPreview();
+                EditorGUILayout.Space(8f);
+                DrawValidationPanel();
                 EditorGUILayout.Space(12f);
                 DrawSelectionInspector();
             }
@@ -228,7 +233,12 @@ public class LevelEditorWindow : EditorWindow
 
         using (new EditorGUILayout.VerticalScope("box"))
         {
-            EditorGUILayout.LabelField("Active Hazard Brush", EditorStyles.boldLabel);
+            showHazardBrush = EditorGUILayout.Foldout(showHazardBrush, "Active Hazard Brush", true);
+            if (!showHazardBrush)
+            {
+                EditorGUILayout.LabelField($"Brush: {brushTrapType} / {brushPattern}", EditorStyles.miniLabel);
+                return;
+            }
 
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -315,7 +325,6 @@ public class LevelEditorWindow : EditorWindow
                 ? "Wall Layer: click or drag to paint walls. Click an existing wall to erase. Ctrl+click also erases."
                 : "Hazard Layer: click an empty cell to place the active hazard. Click an existing hazard to select it. Drag the endpoint handles of a selected horizontal or vertical hazard to resize its path.",
             MessageType.None);
-        DrawWarnings();
     }
 
     private void DrawWallCells(Rect previewRect)
@@ -910,12 +919,28 @@ public class LevelEditorWindow : EditorWindow
         EditorUtility.SetDirty(selectedConfig);
     }
 
-    private void DrawWarnings()
+    private void DrawValidationPanel()
     {
         List<string> warnings = BuildWarnings();
-        for (int i = 0; i < warnings.Count; i++)
+
+        EditorGUILayout.LabelField("Validation", EditorStyles.boldLabel);
+        using (new EditorGUILayout.VerticalScope("box", GUILayout.Height(ValidationPanelHeight)))
         {
-            EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
+            using (EditorGUILayout.ScrollViewScope scrollView = new EditorGUILayout.ScrollViewScope(validationScroll, GUILayout.Height(ValidationPanelHeight - 10f)))
+            {
+                validationScroll = scrollView.scrollPosition;
+
+                if (warnings.Count == 0)
+                {
+                    EditorGUILayout.HelpBox("No current validation warnings.", MessageType.Info);
+                    return;
+                }
+
+                for (int i = 0; i < warnings.Count; i++)
+                {
+                    EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
+                }
+            }
         }
     }
 
@@ -942,11 +967,7 @@ public class LevelEditorWindow : EditorWindow
         }
 
         EditorGUILayout.Space(8f);
-        EditorGUILayout.LabelField("Selected Hazard Warnings", EditorStyles.boldLabel);
-        for (int i = 0; i < warnings.Count; i++)
-        {
-            EditorGUILayout.HelpBox(warnings[i], MessageType.Warning);
-        }
+        EditorGUILayout.HelpBox($"Selected hazard has {warnings.Count} warning(s). See the Validation panel for details.", MessageType.Warning);
     }
 
     private List<string> BuildHazardWarnings(int hazardIndex, SerializedProperty hazard, HashSet<Vector2Int> wallCells, bool includeDuplicateDetails)
