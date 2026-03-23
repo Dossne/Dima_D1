@@ -6,7 +6,6 @@ public class TrapManager : MonoBehaviour
     public static TrapManager Instance { get; private set; }
 
     private readonly List<TrapBase> activeTraps = new List<TrapBase>();
-    private readonly List<TrapBase> stepBuffer = new List<TrapBase>();
 
     private void Awake()
     {
@@ -37,57 +36,36 @@ public class TrapManager : MonoBehaviour
         }
 
         activeTraps.Remove(trap);
-        stepBuffer.Remove(trap);
     }
 
-    public void StepTraps()
+    public void CheckCollision(TrapBase trap)
     {
-        PlayerController player = FindObjectOfType<PlayerController>();
-        if (player == null)
+        if (trap == null || PlayerController.Instance == null)
         {
             return;
         }
 
-        Debug.Log($"[STEP START] Trap count: {activeTraps.Count} | Player pos: {player.CurrentGridPosition}");
-
-        stepBuffer.Clear();
-
-        for (int i = 0; i < activeTraps.Count; i++)
+        if (trap.GridPosition == PlayerController.Instance.gridPosition)
         {
-            if (activeTraps[i] != null)
-            {
-                stepBuffer.Add(activeTraps[i]);
-            }
+            trap.Activate(PlayerController.Instance);
         }
+    }
 
-        for (int i = 0; i < stepBuffer.Count; i++)
+    public void CheckPlayerPosition()
+    {
+        if (PlayerController.Instance == null)
         {
-            if (stepBuffer[i] != null)
-            {
-                stepBuffer[i].MoveStep();
-            }
+            return;
         }
-
-        Vector2Int playerGridPosition = player.CurrentGridPosition;
 
         for (int i = 0; i < activeTraps.Count; i++)
         {
             TrapBase trap = activeTraps[i];
-            if (trap == null)
+            if (trap != null && trap.GridPosition == PlayerController.Instance.gridPosition)
             {
-                continue;
-            }
-
-            Debug.Log($"[TRAP] {trap.name} gridPos: {trap.GridPosition}");
-            Debug.Log($"[COLLISION CHECK] trap {trap.GridPosition} == player {playerGridPosition} -> {(trap.GridPosition == playerGridPosition).ToString().ToLower()}");
-
-            if (trap.GridPosition == playerGridPosition)
-            {
-                trap.Activate(player);
+                trap.Activate(PlayerController.Instance);
                 break;
             }
         }
-
-        Debug.Log($"[STEP END] HP after step: {(GameManager.Instance != null ? GameManager.Instance.CurrentHp : -1)}");
     }
 }

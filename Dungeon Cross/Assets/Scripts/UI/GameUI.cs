@@ -5,9 +5,11 @@ public class GameUI : MonoBehaviour
 {
     private Text hpText;
     private Text streakText;
+    private Text bestText;
     private Text centerText;
     private Text actionText;
     private RectTransform overlayPanelRect;
+    private RectTransform pauseButtonRect;
     private bool waitingForRestart;
     private bool waitingForContinue;
 
@@ -28,11 +30,6 @@ public class GameUI : MonoBehaviour
             scaler.matchWidthOrHeight = 0.5f;
         }
 
-        if (GetComponent<GraphicRaycaster>() == null)
-        {
-            gameObject.AddComponent<GraphicRaycaster>();
-        }
-
         CreateUiElements();
     }
 
@@ -50,6 +47,8 @@ public class GameUI : MonoBehaviour
     private void Start()
     {
         RefreshHp();
+        RefreshStreak();
+        RefreshBest();
         ShowCenterMessage(string.Empty, string.Empty);
     }
 
@@ -57,21 +56,38 @@ public class GameUI : MonoBehaviour
     {
         RefreshHp();
         RefreshStreak();
+        RefreshBest();
 
-        if (!waitingForRestart && !waitingForContinue)
+        if (Input.GetKeyDown(KeyCode.Escape) && !waitingForRestart && !waitingForContinue && PauseMenu.Instance != null)
         {
-            return;
-        }
-
-        if (Input.GetMouseButtonDown(0))
-        {
-            HandleTapAction();
-            return;
+            TogglePauseMenu();
         }
 
         if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
         {
-            HandleTapAction();
+            Vector2 touchPosition = Input.GetTouch(0).position;
+
+            if (!waitingForRestart && !waitingForContinue && HandlePauseButtonTap(touchPosition))
+            {
+                return;
+            }
+
+            if (waitingForRestart || waitingForContinue)
+            {
+                HandleTapAction();
+            }
+        }
+        else if (Input.GetMouseButtonDown(0))
+        {
+            if (!waitingForRestart && !waitingForContinue && HandlePauseButtonTap(Input.mousePosition))
+            {
+                return;
+            }
+
+            if (waitingForRestart || waitingForContinue)
+            {
+                HandleTapAction();
+            }
         }
     }
 
@@ -92,6 +108,8 @@ public class GameUI : MonoBehaviour
 
         hpText = CreateText("HpText", font, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -10f), TextAnchor.UpperLeft, 32);
         streakText = CreateText("StreakText", font, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -50f), TextAnchor.UpperLeft, 28);
+        bestText = CreateText("BestText", font, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -90f), TextAnchor.UpperLeft, 28);
+        CreatePauseButton(font);
 
         GameObject overlayPanel = new GameObject("OverlayPanel");
         overlayPanel.transform.SetParent(transform, false);
@@ -171,6 +189,17 @@ public class GameUI : MonoBehaviour
         streakText.text = $"Streak: {streak}";
     }
 
+    private void RefreshBest()
+    {
+        if (bestText == null)
+        {
+            return;
+        }
+
+        int best = GameManager.Instance != null ? GameManager.Instance.BestStreak : 0;
+        bestText.text = $"BEST: {best}";
+    }
+
     private void HandleGameOver()
     {
         waitingForRestart = true;
@@ -238,6 +267,77 @@ public class GameUI : MonoBehaviour
         {
             waitingForRestart = false;
             GameManager.Instance?.RestartGame();
+        }
+    }
+
+    private void CreatePauseButton(Font font)
+    {
+        GameObject buttonObject = new GameObject("PauseButton");
+        buttonObject.transform.SetParent(transform, false);
+
+        pauseButtonRect = buttonObject.AddComponent<RectTransform>();
+        pauseButtonRect.anchorMin = new Vector2(1f, 1f);
+        pauseButtonRect.anchorMax = new Vector2(1f, 1f);
+        pauseButtonRect.pivot = new Vector2(1f, 1f);
+        pauseButtonRect.anchoredPosition = new Vector2(-20f, -20f);
+        pauseButtonRect.sizeDelta = new Vector2(80f, 80f);
+
+        Image image = buttonObject.AddComponent<Image>();
+        image.color = new Color(1f, 1f, 1f, 0f);
+
+        Outline outline = buttonObject.AddComponent<Outline>();
+        outline.effectColor = Color.white;
+        outline.effectDistance = new Vector2(2f, 2f);
+
+        GameObject textObject = new GameObject("PauseButtonText");
+        textObject.transform.SetParent(buttonObject.transform, false);
+
+        RectTransform textRect = textObject.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        Text text = textObject.AddComponent<Text>();
+        text.font = font;
+        text.fontSize = 36;
+        text.alignment = TextAnchor.MiddleCenter;
+        text.color = Color.white;
+        text.text = "II";
+    }
+
+    private bool HandlePauseButtonTap(Vector2 screenPosition)
+    {
+        if (pauseButtonRect == null || GameManager.Instance == null || PauseMenu.Instance == null)
+        {
+            return false;
+        }
+
+        if (!RectTransformUtility.RectangleContainsScreenPoint(pauseButtonRect, screenPosition, null))
+        {
+            return false;
+        }
+
+        TogglePauseMenu();
+        return true;
+    }
+
+    private void TogglePauseMenu()
+    {
+        if (GameManager.Instance == null || PauseMenu.Instance == null)
+        {
+            return;
+        }
+
+        if (GameManager.Instance.IsPaused)
+        {
+            GameManager.Instance.Resume();
+            PauseMenu.Instance.Hide();
+        }
+        else
+        {
+            GameManager.Instance.Pause();
+            PauseMenu.Instance.Show();
         }
     }
 }

@@ -3,15 +3,28 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     public static bool GameStarted = false;
+    public static PlayerController Instance { get; private set; }
 
-    [SerializeField] private Vector2Int startGridPosition = new Vector2Int(3, 0);
+    [SerializeField] private Vector2Int startGridPosition = new Vector2Int(4, 0);
     [SerializeField] private float swipeThreshold = 50f;
 
+    public Vector2Int gridPosition => currentGridPosition;
     public Vector2Int CurrentGridPosition => currentGridPosition;
 
     private Vector2Int currentGridPosition;
     private Vector2 swipeStartPosition;
     private bool swipeInProgress;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+    }
 
     private void Start()
     {
@@ -36,7 +49,7 @@ public class PlayerController : MonoBehaviour
     private void ReadKeyboardInput()
     {
         if (!GameStarted) return;
-        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete)) return;
+        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete || GameManager.Instance.IsPaused)) return;
 
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
@@ -119,7 +132,7 @@ public class PlayerController : MonoBehaviour
     private void TryMoveFromSwipe(Vector2 swipeDelta)
     {
         if (!GameStarted) return;
-        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete)) return;
+        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete || GameManager.Instance.IsPaused)) return;
 
         if (swipeDelta.magnitude < swipeThreshold)
         {
@@ -143,7 +156,7 @@ public class PlayerController : MonoBehaviour
     private void Move(Vector2Int direction)
     {
         if (!GameStarted) return;
-        if (GameManager.Instance != null && GameManager.Instance.IsLevelComplete) return;
+        if (GameManager.Instance != null && (GameManager.Instance.IsLevelComplete || GameManager.Instance.IsPaused)) return;
 
         Debug.Log($"[MOVE START] Player pos: {currentGridPosition} | HP: {(GameManager.Instance != null ? GameManager.Instance.CurrentHp : -1)}");
 
@@ -156,8 +169,8 @@ public class PlayerController : MonoBehaviour
 
         currentGridPosition = targetGridPosition;
         transform.position = GridManager.Instance.GridToWorld(currentGridPosition);
-        TrapManager.Instance?.StepTraps();
-        GameManager.Instance?.CheckWin(currentGridPosition.y);
+        TrapManager.Instance?.CheckPlayerPosition();
+        GameManager.Instance?.CheckWin(currentGridPosition);
     }
 
     public void RespawnToStart()

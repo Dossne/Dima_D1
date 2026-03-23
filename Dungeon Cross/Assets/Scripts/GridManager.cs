@@ -4,8 +4,8 @@ public class GridManager : MonoBehaviour
 {
     public static GridManager Instance { get; private set; }
 
-    [SerializeField] private int columns = 7;
-    [SerializeField] private int rows = 9;
+    [SerializeField] private int columns = 9;
+    [SerializeField] private int rows = 12;
     [SerializeField] private float cellSize = 1f;
     [SerializeField] private Vector2 gridCenter = Vector2.zero;
 

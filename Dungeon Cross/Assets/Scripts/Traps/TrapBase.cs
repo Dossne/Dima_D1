@@ -1,16 +1,23 @@
-using UnityEngine;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 public abstract class TrapBase : MonoBehaviour
 {
-    [SerializeField] protected int speed = 1;
+    [SerializeField] protected float moveInterval = 0.6f;
     [SerializeField] protected int direction = 1;
     [SerializeField] protected Vector2Int gridPosition;
+    [SerializeField] protected TrapPattern pattern = TrapPattern.Horizontal;
 
     private static Sprite cachedTrapSprite;
+    private readonly List<Vector2Int> trajectoryGridPositions = new List<Vector2Int>();
+    private float moveTimer;
+    protected int pathIndex;
+    protected int pathDirection = 1;
 
     public Vector2Int GridPosition => gridPosition;
+    public TrapPattern Pattern => pattern;
+    protected IReadOnlyList<Vector2Int> TrajectoryGridPositions => trajectoryGridPositions;
 
     protected virtual void Awake()
     {
@@ -20,8 +27,31 @@ public abstract class TrapBase : MonoBehaviour
     protected virtual void Start()
     {
         CreateVisual();
+        CacheTrajectory();
         UpdateWorldPosition();
         DrawTrajectory();
+    }
+
+    protected virtual void Update()
+    {
+        if (!PlayerController.GameStarted)
+        {
+            return;
+        }
+
+        if (GameManager.Instance != null && (GameManager.Instance.IsGameOver || GameManager.Instance.IsLevelComplete || GameManager.Instance.IsPaused))
+        {
+            return;
+        }
+
+        moveTimer += Time.unscaledDeltaTime;
+
+        while (moveTimer >= moveInterval)
+        {
+            moveTimer -= moveInterval;
+            MoveStep();
+            TrapManager.Instance?.CheckCollision(this);
+        }
     }
 
     protected virtual void OnDestroy()
@@ -29,13 +59,25 @@ public abstract class TrapBase : MonoBehaviour
         TrapManager.Instance?.UnregisterTrap(this);
     }
 
+    public virtual void Configure(TrapRow rowConfig, Vector2Int startGridPosition)
+    {
+        direction = rowConfig.direction >= 0 ? 1 : -1;
+        pattern = rowConfig.pattern;
+        gridPosition = startGridPosition;
+        moveInterval = 0.6f / Mathf.Max(1, rowConfig.speed);
+    }
+
     public abstract void Activate(PlayerController player);
+    protected abstract List<Vector2Int> BuildTrajectoryGridPositions();
 
     public virtual void MoveStep()
     {
-        int clampedSpeed = Mathf.Max(0, speed);
-        int stepDirection = direction >= 0 ? 1 : -1;
-        gridPosition += new Vector2Int(clampedSpeed * stepDirection, 0);
+        if (trajectoryGridPositions.Count == 0)
+        {
+            return;
+        }
+
+        gridPosition = trajectoryGridPositions[pathIndex];
         UpdateWorldPosition();
     }
 
@@ -119,6 +161,33 @@ public abstract class TrapBase : MonoBehaviour
         }
     }
 
+    private void CacheTrajectory()
+    {
+        trajectoryGridPositions.Clear();
+        trajectoryGridPositions.AddRange(BuildTrajectoryGridPositions());
+
+        if (trajectoryGridPositions.Count == 0)
+        {
+            trajectoryGridPositions.Add(gridPosition);
+        }
+
+        pathIndex = FindPathIndex(gridPosition);
+        pathDirection = direction >= 0 ? 1 : -1;
+    }
+
+    private int FindPathIndex(Vector2Int targetPosition)
+    {
+        for (int i = 0; i < trajectoryGridPositions.Count; i++)
+        {
+            if (trajectoryGridPositions[i] == targetPosition)
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
     protected virtual void DrawTrajectory()
     {
         if (GridManager.Instance == null)
@@ -127,27 +196,17 @@ public abstract class TrapBase : MonoBehaviour
         }
 
         List<Vector3> pathPoints = new List<Vector3>();
-        int row = Mathf.Clamp(gridPosition.y, 0, GridManager.Instance.Rows - 1);
 
-        if (this is Boulder)
+        for (int i = 0; i < trajectoryGridPositions.Count; i++)
         {
-            for (int column = 0; column < GridManager.Instance.Columns; column++)
-            {
-                Vector3 worldPoint = GridManager.Instance.GridToWorld(new Vector2Int(column, row));
-                pathPoints.Add(new Vector3(worldPoint.x, worldPoint.y, 0.1f));
-            }
+            Vector3 worldPoint = GridManager.Instance.GridToWorld(trajectoryGridPositions[i]);
+            pathPoints.Add(new Vector3(worldPoint.x, worldPoint.y, 0.1f));
         }
-        else
-        {
-            int startColumn = Mathf.Clamp(gridPosition.x, 0, GridManager.Instance.Columns - 1);
-            int endColumn = direction >= 0 ? GridManager.Instance.Columns - 1 : 0;
-            int step = direction >= 0 ? 1 : -1;
 
-            for (int column = startColumn; direction >= 0 ? column <= endColumn : column >= endColumn; column += step)
-            {
-                Vector3 worldPoint = GridManager.Instance.GridToWorld(new Vector2Int(column, row));
-                pathPoints.Add(new Vector3(worldPoint.x, worldPoint.y, 0.1f));
-            }
+        if (pattern == TrapPattern.Square && trajectoryGridPositions.Count > 0)
+        {
+            Vector3 firstPoint = GridManager.Instance.GridToWorld(trajectoryGridPositions[0]);
+            pathPoints.Add(new Vector3(firstPoint.x, firstPoint.y, 0.1f));
         }
 
         if (pathPoints.Count == 0)

@@ -26,6 +26,7 @@ public class SceneBootstrap : MonoBehaviour
         }
 
         ConfigureGrid(gridManager);
+        ConfigureDungeonVisual();
 
         TrapManager trapManager = FindObjectOfType<TrapManager>();
         if (trapManager == null)
@@ -54,18 +55,19 @@ public class SceneBootstrap : MonoBehaviour
         ConfigurePlayer(player);
         ConfigureCamera();
         ConfigureUI();
+        ConfigurePauseMenu();
         ConfigureStartScreen();
     }
 
     private void ConfigureGrid(GridManager gridManager)
     {
-        GridCenterField?.SetValue(gridManager, new Vector2(3f, 4f));
+        GridCenterField?.SetValue(gridManager, new Vector2(4f, 5.5f));
         RecalculateOriginMethod?.Invoke(gridManager, null);
     }
 
     private void ConfigurePlayer(PlayerController player)
     {
-        Vector2Int startGridPosition = new Vector2Int(3, 0);
+        Vector2Int startGridPosition = new Vector2Int(4, 0);
         PlayerStartGridPositionField?.SetValue(player, startGridPosition);
 
         if (GridManager.Instance != null)
@@ -91,7 +93,7 @@ public class SceneBootstrap : MonoBehaviour
 
         targetCamera.orthographic = true;
         targetCamera.orthographicSize = 5f;
-        targetCamera.transform.position = new Vector3(3f, 4f, -10f);
+        targetCamera.transform.position = new Vector3(4f, 5.5f, -10f);
     }
 
     private void ConfigureUI()
@@ -134,6 +136,17 @@ public class SceneBootstrap : MonoBehaviour
         }
     }
 
+    private void ConfigurePauseMenu()
+    {
+        if (FindObjectOfType<PauseMenu>() != null)
+        {
+            return;
+        }
+
+        GameObject pauseMenuObject = new GameObject("PauseMenu");
+        pauseMenuObject.AddComponent<PauseMenu>();
+    }
+
     private void ConfigureStartScreen()
     {
         StartScreen startScreen = FindObjectOfType<StartScreen>();
@@ -144,5 +157,16 @@ public class SceneBootstrap : MonoBehaviour
 
         GameObject startScreenObject = new GameObject("StartScreen");
         startScreenObject.AddComponent<StartScreen>();
+    }
+
+    private void ConfigureDungeonVisual()
+    {
+        DungeonVisual dungeonVisual = FindObjectOfType<DungeonVisual>();
+        if (dungeonVisual == null)
+        {
+            dungeonVisual = new GameObject("DungeonVisual").AddComponent<DungeonVisual>();
+        }
+
+        dungeonVisual.Build();
     }
 }
