@@ -10,6 +10,13 @@ public class LevelEditorWindow : EditorWindow
         Hazards
     }
 
+
+    private enum LinearHandleType
+    {
+        None,
+        Min,
+        Max
+    }
     private const int Columns = 9;
     private const int Rows = 12;
     private const float CellSize = 30f;
@@ -26,6 +33,7 @@ public class LevelEditorWindow : EditorWindow
     private EditorLayer activeLayer = EditorLayer.Walls;
     private int selectedHazardIndex = -1;
     private int paintedWallValue = -1;
+    private LinearHandleType activeLinearHandle = LinearHandleType.None;
 
     private TrapType brushTrapType = TrapType.Boulder;
     private TrapPattern brushPattern = TrapPattern.Horizontal;
@@ -57,6 +65,7 @@ public class LevelEditorWindow : EditorWindow
     private void OnDisable()
     {
         paintedWallValue = -1;
+        activeLinearHandle = LinearHandleType.None;
     }
 
     private void OnProjectChange()
@@ -304,7 +313,7 @@ public class LevelEditorWindow : EditorWindow
         EditorGUILayout.HelpBox(
             activeLayer == EditorLayer.Walls
                 ? "Wall Layer: click or drag to paint walls. Click an existing wall to erase. Ctrl+click also erases."
-                : "Hazard Layer: click an empty cell to place the active hazard. Click an existing hazard to select it.",
+                : "Hazard Layer: click an empty cell to place the active hazard. Click an existing hazard to select it. Drag the endpoint handles of a selected horizontal or vertical hazard to resize its path.",
             MessageType.None);
         DrawWarnings();
     }
@@ -352,7 +361,7 @@ public class LevelEditorWindow : EditorWindow
 
             List<Vector2Int> pathCells = BuildHazardPreviewCells(hazard);
             Color pathColor = isSelected
-                ? new Color(1f, 1f, 1f, 0.18f)
+                ? new Color(0.85f, 0.95f, 1f, 0.24f)
                 : (activeLayer == EditorLayer.Hazards ? new Color(1f, 1f, 1f, 0.12f) : new Color(1f, 1f, 1f, 0.06f));
 
             for (int pathIndex = 0; pathIndex < pathCells.Count; pathIndex++)
@@ -363,8 +372,16 @@ public class LevelEditorWindow : EditorWindow
 
             if ((pattern == TrapPattern.Horizontal || pattern == TrapPattern.Vertical) && pathCells.Count > 0)
             {
-                DrawOutline(GetCellRect(previewRect, pathCells[0].x, pathCells[0].y), new Color(0.7f, 0.95f, 1f, 0.8f), 2f);
-                DrawOutline(GetCellRect(previewRect, pathCells[pathCells.Count - 1].x, pathCells[pathCells.Count - 1].y), new Color(0.7f, 0.95f, 1f, 0.8f), 2f);
+                Rect minRect = GetCellRect(previewRect, pathCells[0].x, pathCells[0].y);
+                Rect maxRect = GetCellRect(previewRect, pathCells[pathCells.Count - 1].x, pathCells[pathCells.Count - 1].y);
+                DrawOutline(minRect, new Color(0.3f, 0.95f, 1f, 0.95f), 2f);
+                DrawOutline(maxRect, new Color(1f, 0.75f, 0.3f, 0.95f), 2f);
+
+                if (isSelected)
+                {
+                    DrawLinearHandle(previewRect, hazard, true);
+                    DrawLinearHandle(previewRect, hazard, false);
+                }
             }
 
             Rect cellRect = GetCellRect(previewRect, startColumn, startRow);
@@ -392,6 +409,8 @@ public class LevelEditorWindow : EditorWindow
 
             EditorGUI.DrawRect(cellRect, bodyColor);
             GUI.Label(cellRect, GetPatternLabel(pattern), CenterMiniLabel());
+            DrawOutline(cellRect, new Color(0.25f, 1f, 0.8f, isSelected ? 1f : 0.55f), isSelected ? 3f : 2f);
+            DrawCornerMarker(cellRect, new Color(0.25f, 1f, 0.8f, 0.95f));
 
             if (isSelected)
             {
@@ -408,9 +427,15 @@ public class LevelEditorWindow : EditorWindow
             return;
         }
 
+        if (HandleLinearPathHandleInput(currentEvent, previewRect))
+        {
+            return;
+        }
+
         if (currentEvent.type == EventType.MouseUp || currentEvent.type == EventType.Ignore)
         {
             paintedWallValue = -1;
+            activeLinearHandle = LinearHandleType.None;
         }
 
         if (!previewRect.Contains(currentEvent.mousePosition))
@@ -427,6 +452,166 @@ public class LevelEditorWindow : EditorWindow
         {
             HandleHazardPaint(currentEvent, cell);
         }
+    }
+    private bool HandleLinearPathHandleInput(Event currentEvent, Rect previewRect)
+    {
+        if (activeLayer != EditorLayer.Hazards)
+        {
+            activeLinearHandle = currentEvent.type == EventType.MouseUp ? LinearHandleType.None : activeLinearHandle;
+            return false;
+        }
+
+        if (selectedHazardIndex < 0 || selectedHazardIndex >= hazardsProperty.arraySize)
+        {
+            activeLinearHandle = currentEvent.type == EventType.MouseUp ? LinearHandleType.None : activeLinearHandle;
+            return false;
+        }
+
+        SerializedProperty hazard = hazardsProperty.GetArrayElementAtIndex(selectedHazardIndex);
+        TrapPattern pattern = (TrapPattern)hazard.FindPropertyRelative("pattern").enumValueIndex;
+        if (pattern != TrapPattern.Horizontal && pattern != TrapPattern.Vertical)
+        {
+            activeLinearHandle = currentEvent.type == EventType.MouseUp ? LinearHandleType.None : activeLinearHandle;
+            return false;
+        }
+
+        Rect minHandleRect;
+        Rect maxHandleRect;
+        if (!TryGetLinearHandleRects(previewRect, hazard, out minHandleRect, out maxHandleRect))
+        {
+            return false;
+        }
+
+        if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0)
+        {
+            if (minHandleRect.Contains(currentEvent.mousePosition))
+            {
+                activeLinearHandle = LinearHandleType.Min;
+                currentEvent.Use();
+                return true;
+            }
+
+            if (maxHandleRect.Contains(currentEvent.mousePosition))
+            {
+                activeLinearHandle = LinearHandleType.Max;
+                currentEvent.Use();
+                return true;
+            }
+        }
+
+        if (currentEvent.type == EventType.MouseDrag && currentEvent.button == 0 && activeLinearHandle != LinearHandleType.None)
+        {
+            UpdateSelectedHazardHandle(previewRect, hazard, currentEvent.mousePosition);
+            currentEvent.Use();
+            Repaint();
+            return true;
+        }
+
+        if ((currentEvent.type == EventType.MouseUp || currentEvent.type == EventType.Ignore) && activeLinearHandle != LinearHandleType.None)
+        {
+            activeLinearHandle = LinearHandleType.None;
+            currentEvent.Use();
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryGetLinearHandleRects(Rect previewRect, SerializedProperty hazard, out Rect minHandleRect, out Rect maxHandleRect)
+    {
+        minHandleRect = Rect.zero;
+        maxHandleRect = Rect.zero;
+
+        List<Vector2Int> pathCells = BuildHazardPreviewCells(hazard);
+        if (pathCells.Count == 0)
+        {
+            return false;
+        }
+
+        minHandleRect = GetHandleRect(GetCellRect(previewRect, pathCells[0].x, pathCells[0].y));
+        maxHandleRect = GetHandleRect(GetCellRect(previewRect, pathCells[pathCells.Count - 1].x, pathCells[pathCells.Count - 1].y));
+        return true;
+    }
+
+    private void UpdateSelectedHazardHandle(Rect previewRect, SerializedProperty hazard, Vector2 mousePosition)
+    {
+        Vector2Int cell = GetClampedCellFromMouse(previewRect, mousePosition);
+        TrapPattern pattern = (TrapPattern)hazard.FindPropertyRelative("pattern").enumValueIndex;
+
+        if (pattern == TrapPattern.Horizontal)
+        {
+            int maxColumn = Mathf.Clamp(hazard.FindPropertyRelative("maxColumn").intValue, 1, Columns - 2);
+            int minColumn = Mathf.Clamp(hazard.FindPropertyRelative("minColumn").intValue, 1, Columns - 2);
+            int column = Mathf.Clamp(cell.x, 1, Columns - 2);
+
+            if (activeLinearHandle == LinearHandleType.Min)
+            {
+                hazard.FindPropertyRelative("minColumn").intValue = Mathf.Min(column, maxColumn);
+            }
+            else if (activeLinearHandle == LinearHandleType.Max)
+            {
+                hazard.FindPropertyRelative("maxColumn").intValue = Mathf.Max(column, minColumn);
+            }
+        }
+        else if (pattern == TrapPattern.Vertical)
+        {
+            int minRow = Mathf.Clamp(hazard.FindPropertyRelative("minRow").intValue, 1, Rows - 2);
+            int maxRow = Mathf.Clamp(hazard.FindPropertyRelative("maxRow").intValue, 1, Rows - 2);
+            int row = Mathf.Clamp(cell.y, 1, Rows - 2);
+
+            if (activeLinearHandle == LinearHandleType.Min)
+            {
+                hazard.FindPropertyRelative("minRow").intValue = Mathf.Min(row, maxRow);
+            }
+            else if (activeLinearHandle == LinearHandleType.Max)
+            {
+                hazard.FindPropertyRelative("maxRow").intValue = Mathf.Max(row, minRow);
+            }
+        }
+
+        serializedConfig.ApplyModifiedProperties();
+        EditorUtility.SetDirty(selectedConfig);
+    }
+
+    private Rect GetHandleRect(Rect cellRect)
+    {
+        float size = 12f;
+        return new Rect(cellRect.center.x - size * 0.5f, cellRect.center.y - size * 0.5f, size, size);
+    }
+
+    private void DrawLinearHandle(Rect previewRect, SerializedProperty hazard, bool isMinHandle)
+    {
+        Rect minHandleRect;
+        Rect maxHandleRect;
+        if (!TryGetLinearHandleRects(previewRect, hazard, out minHandleRect, out maxHandleRect))
+        {
+            return;
+        }
+
+        Rect handleRect = isMinHandle ? minHandleRect : maxHandleRect;
+        Color handleColor = isMinHandle ? new Color(0.3f, 0.95f, 1f, 0.95f) : new Color(1f, 0.75f, 0.3f, 0.95f);
+        if ((isMinHandle && activeLinearHandle == LinearHandleType.Min) || (!isMinHandle && activeLinearHandle == LinearHandleType.Max))
+        {
+            handleColor = Color.white;
+        }
+
+        EditorGUI.DrawRect(handleRect, handleColor);
+        DrawOutline(handleRect, new Color(0.08f, 0.08f, 0.08f, 0.95f), 1f);
+    }
+
+    private void DrawCornerMarker(Rect cellRect, Color color)
+    {
+        EditorGUI.DrawRect(new Rect(cellRect.x + 3f, cellRect.y + 3f, 7f, 7f), color);
+    }
+
+    private Vector2Int GetClampedCellFromMouse(Rect previewRect, Vector2 mousePosition)
+    {
+        float normalizedX = Mathf.Clamp(mousePosition.x - previewRect.x, 0f, previewRect.width - 0.001f);
+        float normalizedY = Mathf.Clamp(mousePosition.y - previewRect.y, 0f, previewRect.height - 0.001f);
+        int column = Mathf.Clamp(Mathf.FloorToInt(normalizedX / CellSize), 0, Columns - 1);
+        int rowFromTop = Mathf.Clamp(Mathf.FloorToInt(normalizedY / CellSize), 0, Rows - 1);
+        int row = Rows - 1 - rowFromTop;
+        return new Vector2Int(column, row);
     }
     private void HandleWallPaint(Event currentEvent, Vector2Int cell)
     {
@@ -1359,6 +1544,12 @@ public class LevelEditorWindow : EditorWindow
         EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
     }
 }
+
+
+
+
+
+
 
 
 
