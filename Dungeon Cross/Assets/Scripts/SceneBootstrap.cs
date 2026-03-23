@@ -25,6 +25,7 @@ public class SceneBootstrap : MonoBehaviour
 
         ConfigureGrid(gridManager);
         ConfigureDungeonVisual();
+        ConfigureMusic();
 
         if (FindObjectOfType<TrapManager>() == null)
         {
@@ -122,6 +123,17 @@ public class SceneBootstrap : MonoBehaviour
         }
     }
 
+
+    private void ConfigureMusic()
+    {
+        MusicManager musicManager = FindObjectOfType<MusicManager>();
+        if (musicManager == null)
+        {
+            musicManager = new GameObject("MusicManager").AddComponent<MusicManager>();
+        }
+
+        musicManager.InitializeIfNeeded();
+    }
     private void ConfigurePauseMenu()
     {
         if (FindObjectOfType<PauseMenu>() == null)
@@ -149,3 +161,4 @@ public class SceneBootstrap : MonoBehaviour
         dungeonVisual.Build();
     }
 }
+
