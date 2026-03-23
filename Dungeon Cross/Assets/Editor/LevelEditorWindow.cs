@@ -317,6 +317,7 @@ public class LevelEditorWindow : EditorWindow
         }
 
         DrawWallCells(previewRect);
+        DrawConflictOverlay(previewRect);
         DrawHazardPreview(previewRect);
         HandlePreviewInput(previewRect);
 
@@ -1080,6 +1081,61 @@ public class LevelEditorWindow : EditorWindow
         }
 
         return wallCells;
+    }
+
+    private void DrawConflictOverlay(Rect previewRect)
+    {
+        HashSet<Vector2Int> wallCells = BuildWallCellSet();
+        if (wallCells.Count == 0 || hazardsProperty == null || hazardsProperty.arraySize == 0)
+        {
+            return;
+        }
+
+        HashSet<Vector2Int> pathConflictCells = new HashSet<Vector2Int>();
+        HashSet<Vector2Int> startConflictCells = new HashSet<Vector2Int>();
+        CollectHazardConflictCells(wallCells, pathConflictCells, startConflictCells);
+
+        Color pathFillColor = new Color(1f, 0.18f, 0.18f, 0.2f);
+        Color pathOutlineColor = new Color(1f, 0.28f, 0.28f, 0.92f);
+        foreach (Vector2Int cell in pathConflictCells)
+        {
+            Rect cellRect = GetCellRect(previewRect, cell.x, cell.y);
+            EditorGUI.DrawRect(new Rect(cellRect.x + 4f, cellRect.y + 4f, cellRect.width - 8f, cellRect.height - 8f), pathFillColor);
+            DrawOutline(new Rect(cellRect.x + 3f, cellRect.y + 3f, cellRect.width - 6f, cellRect.height - 6f), pathOutlineColor, 2f);
+        }
+
+        Color startFillColor = new Color(1f, 0.05f, 0.05f, 0.26f);
+        Color startOutlineColor = new Color(1f, 0.92f, 0.35f, 0.98f);
+        foreach (Vector2Int cell in startConflictCells)
+        {
+            Rect cellRect = GetCellRect(previewRect, cell.x, cell.y);
+            EditorGUI.DrawRect(cellRect, startFillColor);
+            DrawOutline(cellRect, startOutlineColor, 2f);
+            GUI.Label(cellRect, "!", CenterMiniLabel());
+        }
+    }
+
+    private void CollectHazardConflictCells(HashSet<Vector2Int> wallCells, HashSet<Vector2Int> pathConflictCells, HashSet<Vector2Int> startConflictCells)
+    {
+        for (int i = 0; i < hazardsProperty.arraySize; i++)
+        {
+            SerializedProperty hazard = hazardsProperty.GetArrayElementAtIndex(i);
+            Vector2Int startCell = GetHazardStartCell(hazard);
+            if (IsInsideRoomBounds(startCell) && wallCells.Contains(startCell))
+            {
+                startConflictCells.Add(startCell);
+            }
+
+            List<Vector2Int> pathCells = BuildHazardPreviewCells(hazard);
+            for (int pathIndex = 0; pathIndex < pathCells.Count; pathIndex++)
+            {
+                Vector2Int pathCell = pathCells[pathIndex];
+                if (IsInsideRoomBounds(pathCell) && wallCells.Contains(pathCell))
+                {
+                    pathConflictCells.Add(pathCell);
+                }
+            }
+        }
     }
 
     private bool HasHazardValidationIssues(int hazardIndex, SerializedProperty hazard, HashSet<Vector2Int> wallCells)
