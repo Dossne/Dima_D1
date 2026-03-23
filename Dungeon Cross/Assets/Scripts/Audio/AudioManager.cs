@@ -2,20 +2,26 @@ using UnityEngine;
 
 public class AudioManager : MonoBehaviour
 {
-    public static AudioManager Instance { get; private set; }
-
     private const string MusicResourcePath = "Audio/Music/8BitDungeon";
     private const string SoundEnabledKey = "SoundEnabled";
+    private const string MusicVolumeKey = "MusicVolume";
+    private const float DefaultMusicVolume = 0.5f;
+    private const float DefaultSfxVolume = 1f;
+
+    public static AudioManager Instance { get; private set; }
 
     [SerializeField] private AudioClip backgroundMusic;
-    [SerializeField] private float musicVolume = 0.5f;
-    [SerializeField] private float sfxVolume = 1f;
+    [SerializeField] private float musicVolume = DefaultMusicVolume;
+    [SerializeField] private float sfxVolume = DefaultSfxVolume;
 
     private AudioSource musicSource;
     private AudioSource sfxSource;
     private bool initialized;
     private bool soundEnabled = true;
     private bool missingMusicWarningShown;
+
+    public float MusicVolume => musicVolume;
+    public float SfxVolume => sfxVolume;
 
     private void Awake()
     {
@@ -40,6 +46,8 @@ public class AudioManager : MonoBehaviour
                 backgroundMusic = Resources.Load<AudioClip>(MusicResourcePath);
             }
 
+            musicVolume = PlayerPrefs.GetFloat(MusicVolumeKey, DefaultMusicVolume);
+            sfxVolume = DefaultSfxVolume;
             initialized = true;
         }
 
@@ -75,6 +83,8 @@ public class AudioManager : MonoBehaviour
     public void SetMusicVolume(float value)
     {
         musicVolume = Mathf.Clamp01(value);
+        PlayerPrefs.SetFloat(MusicVolumeKey, musicVolume);
+        PlayerPrefs.Save();
         ApplyVolumes();
     }
 
@@ -86,6 +96,8 @@ public class AudioManager : MonoBehaviour
 
     public void RefreshFromPrefs()
     {
+        musicVolume = PlayerPrefs.GetFloat(MusicVolumeKey, DefaultMusicVolume);
+        ApplyVolumes();
         SetSoundEnabled(PlayerPrefs.GetInt(SoundEnabledKey, 1) == 1);
     }
 

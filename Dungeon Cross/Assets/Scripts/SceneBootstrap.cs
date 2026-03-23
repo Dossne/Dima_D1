@@ -128,7 +128,6 @@ public class SceneBootstrap : MonoBehaviour
         }
 
         audioManager.InitializeIfNeeded();
-        audioManager.SetMusicVolume(0.5f);
         audioManager.SetSfxVolume(1f);
     }
 

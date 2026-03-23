@@ -17,6 +17,10 @@ MonoBehaviour:
     pattern: 0
     startColumn: 1
     startRow: 2
+    minColumn: 1
+    maxColumn: 7
+    minRow: 3
+    maxRow: 7
     moveInterval: 0.7
     direction: 1
     dangerRadius: 0.48
@@ -28,6 +32,10 @@ MonoBehaviour:
     pattern: 1
     startColumn: 6
     startRow: 4
+    minColumn: 1
+    maxColumn: 7
+    minRow: 3
+    maxRow: 7
     moveInterval: 0.75
     direction: 1
     dangerRadius: 0.45
@@ -39,6 +47,10 @@ MonoBehaviour:
     pattern: 0
     startColumn: 7
     startRow: 7
+    minColumn: 1
+    maxColumn: 7
+    minRow: 3
+    maxRow: 7
     moveInterval: 0.6
     direction: -1
     dangerRadius: 0.42
@@ -49,7 +61,11 @@ MonoBehaviour:
   - trapType: 0
     pattern: 1
     startColumn: 2
-    startRow: 9
+    startRow: 6
+    minColumn: 1
+    maxColumn: 7
+    minRow: 3
+    maxRow: 9
     moveInterval: 0.7
     direction: -1
     dangerRadius: 0.48
@@ -57,4 +73,97 @@ MonoBehaviour:
     orbitRadius: 0.7
     orbitBladeRadius: 0.22
     orbitAngularSpeed: 210
+  wallCells:
+  - column: 3
+    row: 1
+  - column: 2
+    row: 1
+  - column: 1
+    row: 1
+  - column: 0
+    row: 1
+  - column: 0
+    row: 2
+  - column: 0
+    row: 3
+  - column: 1
+    row: 3
+  - column: 5
+    row: 1
+  - column: 6
+    row: 1
+  - column: 7
+    row: 1
+  - column: 8
+    row: 1
+  - column: 8
+    row: 2
+  - column: 8
+    row: 3
+  - column: 7
+    row: 3
+  - column: 4
+    row: 3
+  - column: 4
+    row: 4
+  - column: 4
+    row: 5
+  - column: 4
+    row: 6
+  - column: 3
+    row: 6
+  - column: 3
+    row: 5
+  - column: 5
+    row: 6
+  - column: 5
+    row: 5
+  - column: 1
+    row: 4
+  - column: 1
+    row: 5
+  - column: 0
+    row: 5
+  - column: 0
+    row: 4
+  - column: 7
+    row: 4
+  - column: 7
+    row: 5
+  - column: 8
+    row: 5
+  - column: 8
+    row: 4
+  - column: 0
+    row: 6
+  - column: 0
+    row: 7
+  - column: 0
+    row: 8
+  - column: 0
+    row: 9
+  - column: 0
+    row: 10
+  - column: 8
+    row: 6
+  - column: 8
+    row: 7
+  - column: 8
+    row: 8
+  - column: 8
+    row: 9
+  - column: 8
+    row: 10
+  - column: 7
+    row: 10
+  - column: 6
+    row: 10
+  - column: 5
+    row: 10
+  - column: 5
+    row: 9
+  - column: 6
+    row: 9
+  - column: 7
+    row: 9
   traps: []

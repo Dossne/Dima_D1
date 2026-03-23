@@ -12,6 +12,115 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2348d2c2321d74468ed05473b39ed99, type: 3}
   m_Name: Level_07
   m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
-  hazards: []
-  wallCells: []
+  hazards:
+  - trapType: 0
+    pattern: 2
+    startColumn: 5
+    startRow: 7
+    minColumn: 1
+    maxColumn: 7
+    minRow: 5
+    maxRow: 9
+    moveInterval: 2
+    direction: 1
+    dangerRadius: 0.45
+    useOrbitingBlade: 1
+    orbitRadius: 0.7
+    orbitBladeRadius: 0.5
+    orbitAngularSpeed: 180
+  - trapType: 1
+    pattern: 2
+    startColumn: 1
+    startRow: 9
+    minColumn: 1
+    maxColumn: 7
+    minRow: 7
+    maxRow: 10
+    moveInterval: 1.5
+    direction: 1
+    dangerRadius: 0.45
+    useOrbitingBlade: 0
+    orbitRadius: 0.7
+    orbitBladeRadius: 0.28
+    orbitAngularSpeed: 180
+  - trapType: 1
+    pattern: 2
+    startColumn: 1
+    startRow: 4
+    minColumn: 1
+    maxColumn: 7
+    minRow: 2
+    maxRow: 6
+    moveInterval: 1.5
+    direction: 1
+    dangerRadius: 0.45
+    useOrbitingBlade: 0
+    orbitRadius: 0.7
+    orbitBladeRadius: 0.28
+    orbitAngularSpeed: 180
+  wallCells:
+  - column: 0
+    row: 9
+  - column: 0
+    row: 7
+  - column: 0
+    row: 5
+  - column: 0
+    row: 3
+  - column: 0
+    row: 1
+  - column: 8
+    row: 10
+  - column: 8
+    row: 8
+  - column: 8
+    row: 6
+  - column: 8
+    row: 4
+  - column: 8
+    row: 2
+  - column: 2
+    row: 1
+  - column: 3
+    row: 1
+  - column: 5
+    row: 1
+  - column: 6
+    row: 1
+  - column: 4
+    row: 3
+  - column: 5
+    row: 3
+  - column: 1
+    row: 5
+  - column: 4
+    row: 5
+  - column: 3
+    row: 5
+  - column: 2
+    row: 5
+  - column: 7
+    row: 8
+  - column: 6
+    row: 8
+  - column: 4
+    row: 8
+  - column: 5
+    row: 8
+  - column: 0
+    row: 10
+  - column: 1
+    row: 10
+  - column: 2
+    row: 10
+  - column: 3
+    row: 10
+  - column: 7
+    row: 10
+  - column: 6
+    row: 10
+  - column: 5
+    row: 10
+  - column: 8
+    row: 1
   traps: []

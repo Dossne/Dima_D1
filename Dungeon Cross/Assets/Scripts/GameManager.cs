@@ -5,9 +5,11 @@ using UnityEngine.SceneManagement;
 public class GameManager : MonoBehaviour
 {
     private const string HitSfxResourcePath = "Audio/Sfx/Punch03";
-    public static GameManager Instance { get; private set; }
-
+    private const string DeathSfxResourcePath = "Audio/Sfx/freesound_community-pixel-death-66829";
+    private const string VictorySfxResourcePath = "Audio/Sfx/astralsynthesizer-11l-victory-1749704552668-358772";
     private const int FinalLevel = 10;
+
+    public static GameManager Instance { get; private set; }
 
     public event Action OnGameOver;
     public event Action OnLevelComplete;
@@ -16,6 +18,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int startingHp = 3;
     [SerializeField] private int currentLevel = 1;
     [SerializeField] private AudioClip hitSfxClip;
+    [SerializeField] private AudioClip deathSfxClip;
+    [SerializeField] private AudioClip victorySfxClip;
 
     public int CurrentHp { get; private set; }
     public int CurrentLevel => currentLevel;
@@ -36,9 +40,20 @@ public class GameManager : MonoBehaviour
         }
 
         Instance = this;
+
         if (hitSfxClip == null)
         {
             hitSfxClip = Resources.Load<AudioClip>(HitSfxResourcePath);
+        }
+
+        if (deathSfxClip == null)
+        {
+            deathSfxClip = Resources.Load<AudioClip>(DeathSfxResourcePath);
+        }
+
+        if (victorySfxClip == null)
+        {
+            victorySfxClip = Resources.Load<AudioClip>(VictorySfxResourcePath);
         }
 
         CurrentHp = Mathf.Max(0, startingHp);
@@ -53,12 +68,16 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (amount > 0)
+        int clampedAmount = Mathf.Max(0, amount);
+        int nextHp = Mathf.Max(0, CurrentHp - clampedAmount);
+
+        if (clampedAmount > 0)
         {
-            AudioManager.Instance?.PlaySfx(overrideSfx != null ? overrideSfx : hitSfxClip);
+            AudioClip damageClip = nextHp == 0 ? deathSfxClip : (overrideSfx != null ? overrideSfx : hitSfxClip);
+            AudioManager.Instance?.PlaySfx(damageClip);
         }
 
-        CurrentHp = Mathf.Max(0, CurrentHp - Mathf.Max(0, amount));
+        CurrentHp = nextHp;
 
         if (CurrentHp == 0)
         {
@@ -96,6 +115,7 @@ public class GameManager : MonoBehaviour
         if (currentLevel >= FinalLevel)
         {
             IsRunComplete = true;
+            AudioManager.Instance?.PlaySfx(victorySfxClip);
             OnRunComplete?.Invoke();
             return;
         }

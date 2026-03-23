@@ -14,37 +14,131 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
   hazards:
   - trapType: 0
-    pattern: 0
-    startColumn: 1
-    startRow: 2
-    moveInterval: 0.85
-    direction: 1
-    dangerRadius: 0.45
-    useOrbitingBlade: 0
-    orbitRadius: 0.7
-    orbitBladeRadius: 0.25
-    orbitAngularSpeed: 180
-  - trapType: 0
     pattern: 1
-    startColumn: 6
-    startRow: 6
+    startColumn: 4
+    startRow: 4
+    minColumn: 1
+    maxColumn: 7
+    minRow: 3
+    maxRow: 7
     moveInterval: 1
     direction: 1
-    dangerRadius: 0.45
+    dangerRadius: 0.5
     useOrbitingBlade: 0
     orbitRadius: 0.7
-    orbitBladeRadius: 0.25
+    orbitBladeRadius: 0.28
     orbitAngularSpeed: 180
   - trapType: 1
     pattern: 0
-    startColumn: 7
-    startRow: 9
-    moveInterval: 0.75
-    direction: -1
-    dangerRadius: 0.4
+    startColumn: 4
+    startRow: 5
+    minColumn: 1
+    maxColumn: 7
+    minRow: 3
+    maxRow: 7
+    moveInterval: 0.8
+    direction: 1
+    dangerRadius: 0.6
     useOrbitingBlade: 0
     orbitRadius: 0.7
-    orbitBladeRadius: 0.25
+    orbitBladeRadius: 0.28
     orbitAngularSpeed: 180
-  wallCells: []
+  - trapType: 0
+    pattern: 0
+    startColumn: 1
+    startRow: 9
+    minColumn: 1
+    maxColumn: 4
+    minRow: 7
+    maxRow: 10
+    moveInterval: 0.8
+    direction: 1
+    dangerRadius: 0.45
+    useOrbitingBlade: 0
+    orbitRadius: 0.7
+    orbitBladeRadius: 0.28
+    orbitAngularSpeed: 180
+  wallCells:
+  - column: 3
+    row: 1
+  - column: 5
+    row: 1
+  - column: 5
+    row: 2
+  - column: 5
+    row: 3
+  - column: 3
+    row: 2
+  - column: 3
+    row: 3
+  - column: 2
+    row: 3
+  - column: 1
+    row: 3
+  - column: 6
+    row: 3
+  - column: 7
+    row: 3
+  - column: 7
+    row: 4
+  - column: 8
+    row: 4
+  - column: 8
+    row: 5
+  - column: 8
+    row: 6
+  - column: 8
+    row: 7
+  - column: 8
+    row: 8
+  - column: 7
+    row: 8
+  - column: 6
+    row: 8
+  - column: 6
+    row: 9
+  - column: 5
+    row: 9
+  - column: 5
+    row: 8
+  - column: 4
+    row: 8
+  - column: 6
+    row: 10
+  - column: 7
+    row: 10
+  - column: 8
+    row: 9
+  - column: 7
+    row: 9
+  - column: 8
+    row: 10
+  - column: 0
+    row: 9
+  - column: 0
+    row: 8
+  - column: 0
+    row: 7
+  - column: 0
+    row: 6
+  - column: 0
+    row: 5
+  - column: 0
+    row: 4
+  - column: 0
+    row: 3
+  - column: 2
+    row: 4
+  - column: 1
+    row: 4
+  - column: 3
+    row: 7
+  - column: 2
+    row: 7
+  - column: 5
+    row: 7
+  - column: 5
+    row: 6
+  - column: 0
+    row: 10
   traps: []
