@@ -1,12 +1,9 @@
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
 [DefaultExecutionOrder(-100)]
 public class SceneBootstrap : MonoBehaviour
 {
-    private static readonly FieldInfo GridCenterField = typeof(GridManager).GetField("gridCenter", BindingFlags.Instance | BindingFlags.NonPublic);
-
     private void Awake()
     {
         PlayerController.GameStarted = false;
@@ -58,8 +55,7 @@ public class SceneBootstrap : MonoBehaviour
 
     private void ConfigureGrid(GridManager gridManager)
     {
-        GridCenterField?.SetValue(gridManager, new Vector2(4f, 5.5f));
-        typeof(GridManager).GetMethod("RecalculateOrigin", BindingFlags.Instance | BindingFlags.NonPublic)?.Invoke(gridManager, null);
+        gridManager.ConfigureGridCenter(new Vector2(4f, 5.5f));
     }
 
     private void ConfigureCamera()

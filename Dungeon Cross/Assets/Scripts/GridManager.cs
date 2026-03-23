@@ -116,6 +116,12 @@ public class GridManager : MonoBehaviour
         return GetWorldPosition(columns / 2, rows - 1);
     }
 
+    public void ConfigureGridCenter(Vector2 newGridCenter)
+    {
+        gridCenter = newGridCenter;
+        RecalculateOrigin();
+    }
+
     public void FitCameraToGrid()
     {
         Camera cam = Camera.main;
