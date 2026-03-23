@@ -78,7 +78,7 @@ public class GameManager : MonoBehaviour
         OnLevelComplete?.Invoke();
     }
 
-    public void Respawn()
+    public void AdvanceToNextLevel()
     {
         IsGameOver = false;
         IsLevelComplete = false;
@@ -92,7 +92,7 @@ public class GameManager : MonoBehaviour
         IsGameStarted = true;
     }
 
-    public void RestartGame()
+    public void ReloadGame()
     {
         CurrentHp = Mathf.Max(0, startingHp);
         currentLevel = 1;
@@ -130,7 +130,7 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
     }
 
-    public void ResetGame()
+    public void ResetRunState()
     {
         CurrentHp = Mathf.Max(0, startingHp);
         currentLevel = 1;

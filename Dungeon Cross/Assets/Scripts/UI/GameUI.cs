@@ -251,7 +251,7 @@ public class GameUI : MonoBehaviour
             waitingForContinue = false;
             ShowCenterMessage(string.Empty, string.Empty);
 
-            GameManager.Instance?.Respawn();
+            GameManager.Instance?.AdvanceToNextLevel();
 
             PlayerController player = FindObjectOfType<PlayerController>();
             if (player != null)
@@ -266,7 +266,7 @@ public class GameUI : MonoBehaviour
         if (waitingForRestart)
         {
             waitingForRestart = false;
-            GameManager.Instance?.RestartGame();
+            GameManager.Instance?.ReloadGame();
         }
     }
 

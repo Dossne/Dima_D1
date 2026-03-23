@@ -12,7 +12,7 @@ public class SceneBootstrap : MonoBehaviour
             gameManager = new GameObject("GameManager").AddComponent<GameManager>();
         }
 
-        gameManager.ResetGame();
+        gameManager.ResetRunState();
 
         GridManager gridManager = FindObjectOfType<GridManager>();
         if (gridManager == null)

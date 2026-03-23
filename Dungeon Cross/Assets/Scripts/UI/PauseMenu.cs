@@ -187,7 +187,7 @@ public class PauseMenu : MonoBehaviour
         if (restartButtonRect != null && RectTransformUtility.RectangleContainsScreenPoint(restartButtonRect, screenPosition, null))
         {
             GameManager.Instance.Resume();
-            GameManager.Instance.RestartGame();
+            GameManager.Instance.ReloadGame();
             canvas.enabled = false;
             return;
         }
